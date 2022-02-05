@@ -1,0 +1,13 @@
+[
+    { "caption": "-" },
+    {
+        "caption": "Signet",
+        "children":
+        [
+            { "caption": "Toggle Signet", "command": "sbot_toggle_signet" },
+            { "caption": "Next Signet", "command": "sbot_next_signet" },
+            { "caption": "Previous Signet", "command": "sbot_previous_signet" },
+            { "caption": "Clear All Signets", "command": "sbot_clear_signets" }
+        ]
+    },
+]
