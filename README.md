@@ -1,5 +1,6 @@
 # What It Is
 Enhanced bookmarks:
+
 - `Bookmark` and `mark` are already taken so I shall use `signet` which means in French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
 - Persists to sbot-sigs file.
@@ -13,12 +14,12 @@ Enhanced bookmarks:
 Built for Windows and ST4. Other OSes and ST versions will require some hacking.
 
 ## Commands
-| Command                  | Description |
-|:--------                 |:-------     |
-| sbot_toggle_signet       | Toggle at row |
-| sbot_next_signet         | Goto next |
-| sbot_previous_signet     | Goto previous |
-| sbot_clear_signets       | Clear all |
+| Command                  | Implementation | Description |
+|:--------                 |:-------        |:-------     |
+| sbot_toggle_signet       | Context, Main  | Toggle signet at row |
+| sbot_next_signet         | Context, Main  | Goto next signet |
+| sbot_previous_signet     | Context, Main  | Goto previous signet |
+| sbot_clear_signets       | Context, Main  | Clear all signets |
 
 ## Settings
 | Setting                  | Description |
