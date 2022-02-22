@@ -179,30 +179,31 @@ def _get_store_fn(project_fn):
 def _save_sigs(winid, project_fn):
     ''' General project saver. '''
 
-    store_fn = _get_store_fn(project_fn)
+    if project_fn is not None:
+        store_fn = _get_store_fn(project_fn)
 
-    # Remove invalid files and any empty values.
-    if winid in _sigs.copy():
-        # Safe iteration - accumulate elements to del later.
-        del_els = []
+        # Remove invalid files and any empty values.
+        if winid in _sigs.copy():
+            # Safe iteration - accumulate elements to del later.
+            del_els = []
 
-        for fn, _ in _sigs[winid].items():
-            if fn is not None:
-                if not os.path.exists(fn):
-                    del_els.append((winid, fn))
-                elif len(_sigs[winid][fn]) == 0:
-                    del_els.append((winid, fn))
+            for fn, _ in _sigs[winid].items():
+                if fn is not None:
+                    if not os.path.exists(fn):
+                        del_els.append((winid, fn))
+                    elif len(_sigs[winid][fn]) == 0:
+                        del_els.append((winid, fn))
 
-        # Now remove from collection.
-        for (w, fn) in del_els:
-            del _sigs[w][fn]
+            # Now remove from collection.
+            for (w, fn) in del_els:
+                del _sigs[w][fn]
 
-        # Now save, or delete if empty.
-        if len(_sigs[winid]) > 0:
-            with open(store_fn, 'w') as fp:
-                json.dump(_sigs[winid], fp, indent=4)
-        elif os.path.isfile(store_fn):
-            os.remove(store_fn)
+            # Now save, or delete if empty.
+            if len(_sigs[winid]) > 0:
+                with open(store_fn, 'w') as fp:
+                    json.dump(_sigs[winid], fp, indent=4)
+            elif os.path.isfile(store_fn):
+                os.remove(store_fn)
 
 
 #-----------------------------------------------------------------------------------
@@ -210,16 +211,17 @@ def _open_sigs(winid, project_fn):
     ''' General project opener. '''
 
     global _sigs
-    store_fn = _get_store_fn(project_fn)
+    if project_fn is not None:
+        store_fn = _get_store_fn(project_fn)
 
-    if os.path.isfile(store_fn):
-        with open(store_fn, 'r') as fp:
-            values = json.load(fp)
-            _sigs[winid] = values
-    else:
-        # Assumes new file.
-        sublime.status_message('Creating new signets file')
-        _sigs[winid] = {}
+        if os.path.isfile(store_fn):
+            with open(store_fn, 'r') as fp:
+                values = json.load(fp)
+                _sigs[winid] = values
+        else:
+            # Assumes new file.
+            sublime.status_message('Creating new signets file')
+            _sigs[winid] = {}
 
 
 #-----------------------------------------------------------------------------------
