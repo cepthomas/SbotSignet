@@ -26,7 +26,7 @@ _store_path = None
 def plugin_loaded():
     # print(">>> SbotSignet plugin_loaded()")
     global _store_path
-    _store_path = os.path.join(sublime.packages_path(), 'SbotSignet', 'store')
+    _store_path = os.path.join(sublime.packages_path(), 'SbotSignet', 'store') #TODO put in User, see builder
     pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
 
 
