@@ -4,6 +4,7 @@ import pathlib
 import sublime
 import sublime_plugin
 
+#TODO make object-y
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet'
@@ -24,16 +25,9 @@ _store_path = None
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
-    # print(">>> SbotSignet plugin_loaded()")
     global _store_path
-    _store_path = os.path.join(sublime.packages_path(), 'SbotSignet', 'store') #TODO put in User, see builder
+    _store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
     pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-
-
-#-----------------------------------------------------------------------------------
-def plugin_unloaded():
-    # print("SbotSignet plugin_unloaded()")
-    pass
 
 
 #-----------------------------------------------------------------------------------
