@@ -4,7 +4,6 @@ import pathlib
 import sublime
 import sublime_plugin
 
-#TODO make object-y
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet'
