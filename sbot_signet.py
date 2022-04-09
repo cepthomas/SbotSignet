@@ -4,6 +4,7 @@ import pathlib
 import sublime
 import sublime_plugin
 
+# TODO clear all sigs in project.
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet'
@@ -13,7 +14,7 @@ NEXT_SIG = 1
 PREV_SIG = 2
 
 # The current signet collections. Key is window id which corresponds to a project.
-_sigs = {}
+_sigs = None
 
 # Need to track what's been initialized.
 _views_inited = set()
@@ -23,32 +24,31 @@ _store_path = None
 
 
 #-----------------------------------------------------------------------------------
-def plugin_loaded():
-    global _store_path
-    _store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
-    pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-
-
-#-----------------------------------------------------------------------------------
-class SignetEvent(sublime_plugin.ViewEventListener):
+class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. See lifecycle notes in README.md. '''
 
-    def on_activated(self):
-        ''' When focus/tab received. '''
+    def on_init(self, views):
+        ''' First thing that happens. '''
+        global _store_path
+
+        # Init now so signets are honored when no real views.
+        _store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
+        pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
+        
+        view = views[0]
+        _open_sigs(view.window().id(), view.window().project_file_name())
+
+
+    def on_load(self, view):
+        ''' Load an existing file. '''
         global _views_inited
 
-        view = self.view
-        fn = view.file_name()
+        fn = view.file_name
 
         # Ignore transient views.
         if view.is_scratch() is False and fn is not None:
             vid = view.id()
             winid = view.window().id()
-
-            # Lazy init.
-            # Is the persist file read yet?
-            if winid not in _sigs:
-                _open_sigs(winid, view.window().project_file_name())
 
             # Init the view, maybe.
             if vid not in _views_inited:
@@ -65,19 +65,12 @@ class SignetEvent(sublime_plugin.ViewEventListener):
                     settings = sublime.load_settings("SbotSignet.sublime-settings")
                     view.add_regions(SIGNET_REGION_NAME, regions, settings.get('signet_scope'), SIGNET_ICON)
 
-    def on_load(self):
-        ''' Called when file loaded. '''
-        pass
-
-    def on_deactivated(self):
+    def on_deactivated(self, view):
         ''' Save to file when focus/tab lost. '''
-        winid = self.view.window().id()
-        if winid in _sigs:
-            _save_sigs(winid, self.view.window().project_file_name())
-
-    def on_close(self):
-        ''' Called when a view is closed. Note there may still be other views into the same buffer. '''
-        pass
+        if _sigs is not None:
+            winid = view.window().id()
+            if winid in _sigs:
+                _save_sigs(winid, view.window().project_file_name())
 
 
 #-----------------------------------------------------------------------------------
@@ -204,6 +197,8 @@ def _open_sigs(winid, project_fn):
     ''' General project opener. '''
 
     global _sigs
+    _sigs = {}
+
     if project_fn is not None:
         store_fn = _get_store_fn(project_fn)
 
@@ -220,6 +215,9 @@ def _open_sigs(winid, project_fn):
 #-----------------------------------------------------------------------------------
 def _go_to_signet(view, direction):
     ''' Common navigate to signet in whole collection. direction is NEXT_SIG or PREV_SIG. '''
+
+    if _sigs is None:
+        return
 
     window = view.window()
 
@@ -315,13 +313,14 @@ def _get_persist_rows(view, init_empty):
     winid = view.window().id()
     fn = view.file_name()
 
-    if winid in _sigs:
-        if fn not in _sigs[winid]:
-            if init_empty:
-                # Add a new one.
-                _sigs[winid][fn] = []
+    if _sigs is not None:
+        if winid in _sigs:
+            if fn not in _sigs[winid]:
+                if init_empty:
+                    # Add a new one.
+                    _sigs[winid][fn] = []
+                    vals = _sigs[winid][fn]
+            else:
                 vals = _sigs[winid][fn]
-        else:
-            vals = _sigs[winid][fn]
 
     return vals
