@@ -1,7 +1,5 @@
 {
-    ///// Signet settings /////
-    // Scope for coloring gutter icon.
+    // Signet settings - see README.md //
     "signet_scope": "keyword",
-    // If true next/prev traverses all marked files, otherwise just the open file.
     "signet_nav_files": true,
 }

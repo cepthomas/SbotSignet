@@ -16,43 +16,54 @@ PREV_SIG = 2
 # The current signet collections. Key is window id which corresponds to a project.
 _sigs = None
 
-# Need to track what's been initialized.
-_views_inited = set()
 
-# Where we keep the persistence.
-_store_path = None
-
+# Decorator for tracing function entry.
+def trace_func(func):
+    def inner(ref, *args):
+        print(f'FUN {ref.__class__.__name__}.{func.__name__} {args}')
+        return func(ref, *args)
+    return inner
 
 #-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. See lifecycle notes in README.md. '''
 
+    # Need to track what's been initialized.
+    views_inited = set()
+
+    @trace_func
     def on_init(self, views):
         ''' First thing that happens. '''
-        global _store_path
-
-        # Init now so signets are honored when no real views.
-        _store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
-        pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-        
         view = views[0]
-        _open_sigs(view.window().id(), view.window().project_file_name())
+        self._open_sigs(view.window().id(), view.window().project_file_name())
+        for view in views:
+            self._load_file(view)
 
-
+    @trace_func
     def on_load(self, view):
         ''' Load an existing file. '''
-        global _views_inited
+        self._load_file(view)
 
-        fn = view.file_name
+    @trace_func
+    def on_deactivated(self, view):
+        ''' Save to file when focus/tab lost. '''
+        window = view.window()
+        if _sigs is not None and window is not None:
+            winid = window.id()
+            if winid in _sigs:
+                self._save_sigs(winid, window.project_file_name())
 
-        # Ignore transient views.
+    @trace_func
+    def _load_file(self, view):
+        ''' Lazy init. '''
+        fn = view.file_name()
         if view.is_scratch() is False and fn is not None:
             vid = view.id()
-            winid = view.window().id()
+            # winid = view.window().id()
 
             # Init the view, maybe.
-            if vid not in _views_inited:
-                _views_inited.add(vid)
+            if vid not in self.views_inited:
+                self.views_inited.add(vid)
 
                 # Init the view with any persist values.
                 rows = _get_persist_rows(view, False)
@@ -65,12 +76,55 @@ class SignetEvent(sublime_plugin.EventListener):
                     settings = sublime.load_settings("SbotSignet.sublime-settings")
                     view.add_regions(SIGNET_REGION_NAME, regions, settings.get('signet_scope'), SIGNET_ICON)
 
-    def on_deactivated(self, view):
-        ''' Save to file when focus/tab lost. '''
-        if _sigs is not None:
-            winid = view.window().id()
-            if winid in _sigs:
-                _save_sigs(winid, view.window().project_file_name())
+    @trace_func
+    def _open_sigs(self, winid, project_fn):
+        ''' General project opener. '''
+        global _sigs
+
+        _sigs = {}
+
+        if project_fn is not None:
+            store_fn = _get_store_fn(project_fn)
+
+            if os.path.isfile(store_fn):
+                with open(store_fn, 'r') as fp:
+                    values = json.load(fp)
+                    _sigs[winid] = values
+            else:
+                # Assumes new file.
+                sublime.status_message('Creating new signets file')
+                _sigs[winid] = {}
+
+    @trace_func
+    def _save_sigs(self, winid, project_fn):
+        ''' General project saver. '''
+        global _sigs
+
+        if project_fn is not None:
+            store_fn = _get_store_fn(project_fn)
+
+            # Remove invalid files and any empty values.
+            if winid in _sigs.copy():
+                # Safe iteration - accumulate elements to del later.
+                del_els = []
+
+                for fn, _ in _sigs[winid].items():
+                    if fn is not None:
+                        if not os.path.exists(fn):
+                            del_els.append((winid, fn))
+                        elif len(_sigs[winid][fn]) == 0:
+                            del_els.append((winid, fn))
+
+                # Now remove from collection.
+                for (w, fn) in del_els:
+                    del _sigs[w][fn]
+
+                # Now save, or delete if empty.
+                if len(_sigs[winid]) > 0:
+                    with open(store_fn, 'w') as fp:
+                        json.dump(_sigs[winid], fp, indent=4)
+                elif os.path.isfile(store_fn):
+                    os.remove(store_fn)
 
 
 #-----------------------------------------------------------------------------------
@@ -153,66 +207,7 @@ def _wait_load_file(view, line):
 
 
 #-----------------------------------------------------------------------------------
-def _get_store_fn(project_fn):
-    ''' General utility. '''
-    global _store_path
-    project_fn = os.path.basename(project_fn).replace('.sublime-project', SIGNET_FILE_EXT)
-    store_fn = os.path.join(_store_path, project_fn)
-    return store_fn
-
-
-#-----------------------------------------------------------------------------------
-def _save_sigs(winid, project_fn):
-    ''' General project saver. '''
-
-    if project_fn is not None:
-        store_fn = _get_store_fn(project_fn)
-
-        # Remove invalid files and any empty values.
-        if winid in _sigs.copy():
-            # Safe iteration - accumulate elements to del later.
-            del_els = []
-
-            for fn, _ in _sigs[winid].items():
-                if fn is not None:
-                    if not os.path.exists(fn):
-                        del_els.append((winid, fn))
-                    elif len(_sigs[winid][fn]) == 0:
-                        del_els.append((winid, fn))
-
-            # Now remove from collection.
-            for (w, fn) in del_els:
-                del _sigs[w][fn]
-
-            # Now save, or delete if empty.
-            if len(_sigs[winid]) > 0:
-                with open(store_fn, 'w') as fp:
-                    json.dump(_sigs[winid], fp, indent=4)
-            elif os.path.isfile(store_fn):
-                os.remove(store_fn)
-
-
-#-----------------------------------------------------------------------------------
-def _open_sigs(winid, project_fn):
-    ''' General project opener. '''
-
-    global _sigs
-    _sigs = {}
-
-    if project_fn is not None:
-        store_fn = _get_store_fn(project_fn)
-
-        if os.path.isfile(store_fn):
-            with open(store_fn, 'r') as fp:
-                values = json.load(fp)
-                _sigs[winid] = values
-        else:
-            # Assumes new file.
-            sublime.status_message('Creating new signets file')
-            _sigs[winid] = {}
-
-
-#-----------------------------------------------------------------------------------
+# @trace_func
 def _go_to_signet(view, direction):
     ''' Common navigate to signet in whole collection. direction is NEXT_SIG or PREV_SIG. '''
 
@@ -324,3 +319,13 @@ def _get_persist_rows(view, init_empty):
                 vals = _sigs[winid][fn]
 
     return vals
+
+#-----------------------------------------------------------------------------------
+def _get_store_fn(project_fn):
+    ''' General utility. '''
+    store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
+    pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
+
+    project_fn = os.path.basename(project_fn).replace('.sublime-project', SIGNET_FILE_EXT)
+    store_fn = os.path.join(store_path, project_fn)
+    return store_fn
