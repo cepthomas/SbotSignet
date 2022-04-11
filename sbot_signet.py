@@ -4,7 +4,6 @@ import pathlib
 import sublime
 import sublime_plugin
 
-# TODO clear all sigs in project.
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet'
@@ -35,7 +34,7 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_init(self, views):
-        ''' First thing that happens when plugin created. Load the persisted file. Views are valid. '''
+        ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid. '''
         view = views[0]
         self._open_sigs(view.window().id(), view.window().project_file_name())
         for view in views:
@@ -51,71 +50,24 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_pre_close_project(self, window):
-        print(f'### wid:{window.id()} _sigs:{_sigs}')
         ''' Save to file when closing window/project. Seems to be called twice. '''
+        print(f'### wid:{window.id()} _sigs:{_sigs}')
         winid = window.id()
         if winid in _sigs:
             self._save_sigs(winid, window.project_file_name())
-
-
-    # ######################### debug #########################################
-    # @trace_func
-    # def on_pre_close(self, view):
-    #     # view.window is None
-    #     print(f'### vid:{view.id()} _sigs:{_sigs}')
-
-    # @trace_func
-    # def on_close(self, view):
-    #     # view.window is None
-    #     print(f'### vid:{view.id()} _sigs:{_sigs}')
-
-    # @trace_func
-    # def on_pre_save(self, view):
-    #     print(f'### {_sigs}')
-
-    # @trace_func
-    # def on_post_save(self, view):
-    #     print(f'### {_sigs}')
-
-    # @trace_func
-    # def on_pre_close_window(self, window):
-    #     print(f'### wid:{window.id()} _sigs:{_sigs}')
-
-    # @trace_func
-    # def on_new_window(self, window):
-    #     ''' Another window/instance has been created. Project has not been opened yet though. '''
-    #     pass
-    #     # self._open_sigs(window.id(), window.project_file_name())
-    #     # print(f'### wid:{window.id()} _sigs:{_sigs}')
-    #     # for view in views:
-    #     #     self._init_view(view)
-
-    # ######################### debug #########################################
-
 
     @trace_func
     def on_load(self, view):
         ''' Load a file. '''
         self._init_view(view)
 
-    # @trace_func
-    # def on_deactivated(self, view):
-    #     ''' Save to file when focus/tab lost. This seems to be the most reliable event. '''
-    #     window = view.window()
-    #     if _sigs is not None and window is not None:
-    #         winid = window.id()
-    #         if winid in _sigs:
-    #             self._save_sigs(winid, window.project_file_name())
-
     @trace_func
     def _init_view(self, view):
         ''' Lazy init. '''
         fn = view.file_name()
         if view.is_scratch() is False and fn is not None:
+            # Init the view if not already.
             vid = view.id()
-            # winid = view.window().id()
-
-            # Init the view, maybe.
             if vid not in self.views_inited:
                 self.views_inited.add(vid)
 
@@ -152,6 +104,11 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' General project saver. '''
         global _sigs
 
+        # TODO signet doesn't stay in place if lines added/deleted. Need to collect from location in view.
+        # for i, value in enumerate(highlight_scopes):
+        #     reg_name = HIGHLIGHT_REGION_NAME % value
+        #     self.view.erase_regions(reg_name)
+
         if project_fn is not None and winid in _sigs:
             store_fn = _get_store_fn(project_fn)
 
@@ -175,7 +132,7 @@ class SignetEvent(sublime_plugin.EventListener):
                 with open(store_fn, 'w') as fp:
                     json.dump(_sigs[winid], fp, indent=4)
             elif os.path.isfile(store_fn):
-                    os.remove(store_fn)
+                os.remove(store_fn)
 
 
 #-----------------------------------------------------------------------------------
