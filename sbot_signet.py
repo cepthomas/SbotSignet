@@ -104,7 +104,7 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' General project saver. '''
         global _sigs
 
-        # TODO signet doesn't stay in place if lines added/deleted. Need to collect from location in view.
+        # TODO signet doesn't stay in place if lines added/deleted. Need to collect from location in view. Like:
         # for i, value in enumerate(highlight_scopes):
         #     reg_name = HIGHLIGHT_REGION_NAME % value
         #     self.view.erase_regions(reg_name)

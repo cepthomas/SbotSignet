@@ -19,7 +19,7 @@ Built for ST4 on Windows and Linux.
 | `sbot_toggle_signet`       | Context, Main  | Toggle signet at row          |             |
 | `sbot_next_signet`         | Context, Main  | Goto next signet              |             |
 | `sbot_previous_signet`     | Context, Main  | Goto previous signet          |             |
-| `sbot_clear_signets`       | Context, Main  | Clear all signets             |             |
+| `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |             |
 
 ## Settings
 | Setting              | Description                      | Options   |
