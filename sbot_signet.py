@@ -13,10 +13,12 @@ SIGNET_FILE_EXT = '.sbot-sigs'
 NEXT_SIG = 1
 PREV_SIG = 2
 
-# The current signet collections. Key is window id which corresponds to a project.
-_sigs = None
+# The current signet collections. This is global across all ST instances/window/project.
+# Key is current window id, value is the collection of file/line signet locations.
+_sigs = {}
 
 
+#-----------------------------------------------------------------------------------
 # Decorator for tracing function entry.
 def trace_func(func):
     def inner(ref, *args):
@@ -33,28 +35,80 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_init(self, views):
-        ''' First thing that happens. Load the persisted file. '''
+        ''' First thing that happens when plugin created. Load the persisted file. Views are valid. '''
         view = views[0]
         self._open_sigs(view.window().id(), view.window().project_file_name())
         for view in views:
-            self._load_file(view)
+            self._init_view(view)
+
+    @trace_func
+    def on_load_project(self, window):
+        ''' This gets called for new windows but not for the first one. '''
+        self._open_sigs(window.id(), window.project_file_name())
+        print(f'### wid:{window.id()} proj:{window.project_file_name()} _sigs:{_sigs}')
+        for view in window.views():
+            self._init_view(view)
+
+    @trace_func
+    def on_pre_close_project(self, window):
+        print(f'### wid:{window.id()} _sigs:{_sigs}')
+        ''' Save to file when closing window/project. Seems to be called twice. '''
+        winid = window.id()
+        if winid in _sigs:
+            self._save_sigs(winid, window.project_file_name())
+
+
+    # ######################### debug #########################################
+    # @trace_func
+    # def on_pre_close(self, view):
+    #     # view.window is None
+    #     print(f'### vid:{view.id()} _sigs:{_sigs}')
+
+    # @trace_func
+    # def on_close(self, view):
+    #     # view.window is None
+    #     print(f'### vid:{view.id()} _sigs:{_sigs}')
+
+    # @trace_func
+    # def on_pre_save(self, view):
+    #     print(f'### {_sigs}')
+
+    # @trace_func
+    # def on_post_save(self, view):
+    #     print(f'### {_sigs}')
+
+    # @trace_func
+    # def on_pre_close_window(self, window):
+    #     print(f'### wid:{window.id()} _sigs:{_sigs}')
+
+    # @trace_func
+    # def on_new_window(self, window):
+    #     ''' Another window/instance has been created. Project has not been opened yet though. '''
+    #     pass
+    #     # self._open_sigs(window.id(), window.project_file_name())
+    #     # print(f'### wid:{window.id()} _sigs:{_sigs}')
+    #     # for view in views:
+    #     #     self._init_view(view)
+
+    # ######################### debug #########################################
+
 
     @trace_func
     def on_load(self, view):
-        ''' Load an existing file. '''
-        self._load_file(view)
+        ''' Load a file. '''
+        self._init_view(view)
+
+    # @trace_func
+    # def on_deactivated(self, view):
+    #     ''' Save to file when focus/tab lost. This seems to be the most reliable event. '''
+    #     window = view.window()
+    #     if _sigs is not None and window is not None:
+    #         winid = window.id()
+    #         if winid in _sigs:
+    #             self._save_sigs(winid, window.project_file_name())
 
     @trace_func
-    def on_deactivated(self, view):
-        ''' Save to file when focus/tab lost. This seems to be the most reliable event. '''
-        window = view.window()
-        if _sigs is not None and window is not None:
-            winid = window.id()
-            if winid in _sigs:
-                self._save_sigs(winid, window.project_file_name())
-
-    @trace_func
-    def _load_file(self, view):
+    def _init_view(self, view):
         ''' Lazy init. '''
         fn = view.file_name()
         if view.is_scratch() is False and fn is not None:
@@ -81,8 +135,6 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' General project opener. '''
         global _sigs
 
-        _sigs = {}
-
         if project_fn is not None:
             store_fn = _get_store_fn(project_fn)
 
@@ -100,30 +152,29 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' General project saver. '''
         global _sigs
 
-        if project_fn is not None:
+        if project_fn is not None and winid in _sigs:
             store_fn = _get_store_fn(project_fn)
 
             # Remove invalid files and any empty values.
-            if winid in _sigs.copy():
-                # Safe iteration - accumulate elements to del later.
-                del_els = []
+            # Safe iteration - accumulate elements to del later.
+            del_els = []
 
-                for fn, _ in _sigs[winid].items():
-                    if fn is not None:
-                        if not os.path.exists(fn):
-                            del_els.append((winid, fn))
-                        elif len(_sigs[winid][fn]) == 0:
-                            del_els.append((winid, fn))
+            for fn, _ in _sigs[winid].items():
+                if fn is not None:
+                    if not os.path.exists(fn):
+                        del_els.append((winid, fn))
+                    elif len(_sigs[winid][fn]) == 0:
+                        del_els.append((winid, fn))
 
-                # Now remove from collection.
-                for (w, fn) in del_els:
-                    del _sigs[w][fn]
+            # Now remove from collection.
+            for (w, fn) in del_els:
+                del _sigs[w][fn]
 
-                # Now save, or delete if empty.
-                if len(_sigs[winid]) > 0:
-                    with open(store_fn, 'w') as fp:
-                        json.dump(_sigs[winid], fp, indent=4)
-                elif os.path.isfile(store_fn):
+            # Now save, or delete if empty.
+            if len(_sigs[winid]) > 0:
+                with open(store_fn, 'w') as fp:
+                    json.dump(_sigs[winid], fp, indent=4)
+            elif os.path.isfile(store_fn):
                     os.remove(store_fn)
 
 
@@ -189,8 +240,10 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         global _sigs
 
-        # Clear collection.
-        _sigs = {}
+        # Clear collection for current window only.
+        winid = self.view.window().id()
+        if winid in _sigs:
+            _sigs[winid] = {}
 
         # Clear visuals in open views.
         for vv in self.view.window().views():
@@ -211,10 +264,11 @@ def _wait_load_file(view, line):
 def _go_to_signet(view, direction):
     ''' Common navigate to signet in whole collection. direction is NEXT_SIG or PREV_SIG. '''
 
-    if _sigs is None:
-        return
-
     window = view.window()
+    winid = window.id()
+
+    if winid not in _sigs:
+        return
 
     settings = sublime.load_settings("SbotSignet.sublime-settings")
     signet_nav_files = settings.get('signet_nav_files')
@@ -308,24 +362,24 @@ def _get_persist_rows(view, init_empty):
     winid = view.window().id()
     fn = view.file_name()
 
-    if _sigs is not None:
-        if winid in _sigs:
-            if fn not in _sigs[winid]:
-                if init_empty:
-                    # Add a new one.
-                    _sigs[winid][fn] = []
-                    vals = _sigs[winid][fn]
-            else:
+    if winid in _sigs:
+        if fn not in _sigs[winid]:
+            if init_empty:
+                # Add a new one.
+                _sigs[winid][fn] = []
                 vals = _sigs[winid][fn]
+        else:
+            vals = _sigs[winid][fn]
 
     return vals
+
 
 #-----------------------------------------------------------------------------------
 def _get_store_fn(project_fn):
     ''' General utility. '''
+    
     store_path = os.path.join(sublime.packages_path(), 'User', 'SbotStore')
     pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
-
     project_fn = os.path.basename(project_fn).replace('.sublime-project', SIGNET_FILE_EXT)
     store_fn = os.path.join(store_path, project_fn)
     return store_fn
