@@ -33,7 +33,7 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_init(self, views):
-        ''' First thing that happens. '''
+        ''' First thing that happens. Load the persisted file. '''
         view = views[0]
         self._open_sigs(view.window().id(), view.window().project_file_name())
         for view in views:
@@ -46,7 +46,7 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_deactivated(self, view):
-        ''' Save to file when focus/tab lost. '''
+        ''' Save to file when focus/tab lost. This seems to be the most reliable event. '''
         window = view.window()
         if _sigs is not None and window is not None:
             winid = window.id()
@@ -183,14 +183,14 @@ class SbotPreviousSignetCommand(sublime_plugin.TextCommand):
 
 
 #-----------------------------------------------------------------------------------
-class SbotClearSignetsCommand(sublime_plugin.TextCommand):
+class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
     ''' Clear all signets. '''
 
     def run(self, edit):
-        # Remove from collection.
-        rows = _get_persist_rows(self.view, False)
-        if rows is not None:
-            rows.clear()
+        global _sigs
+
+        # Clear collection.
+        _sigs = {}
 
         # Clear visuals in open views.
         for vv in self.view.window().views():
