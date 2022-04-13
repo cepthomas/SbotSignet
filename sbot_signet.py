@@ -4,9 +4,8 @@ import pathlib
 import sublime
 import sublime_plugin
 
-
 # Definitions.
-SIGNET_REGION_NAME = 'signet'
+SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
 SIGNET_FILE_EXT = '.sbot-sigs'
 NEXT_SIG = 1
@@ -25,6 +24,7 @@ def trace_func(func):
         return func(ref, *args)
     return inner
 
+
 #-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. See lifecycle notes in README.md. '''
@@ -34,32 +34,35 @@ class SignetEvent(sublime_plugin.EventListener):
 
     @trace_func
     def on_init(self, views):
-        ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid. '''
+        ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
+        Note that this also happens if this module is reloaded - like when editing this file. '''
         view = views[0]
-        self._open_sigs(view.window().id(), view.window().project_file_name())
+        self._open_sigs(view.window())
         for view in views:
             self._init_view(view)
 
     @trace_func
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
-        self._open_sigs(window.id(), window.project_file_name())
-        print(f'### wid:{window.id()} proj:{window.project_file_name()} _sigs:{_sigs}')
+        self._open_sigs(window.id())
         for view in window.views():
             self._init_view(view)
 
     @trace_func
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
-        print(f'### wid:{window.id()} _sigs:{_sigs}')
-        winid = window.id()
-        if winid in _sigs:
-            self._save_sigs(winid, window.project_file_name())
+        if window.id() in _sigs:
+            self._save_sigs(window)
 
     @trace_func
     def on_load(self, view):
         ''' Load a file. '''
         self._init_view(view)
+
+    @trace_func
+    def on_pre_close(self, view):
+        ''' Get the current sigs for the view. '''
+        self._collect_sigs(view)
 
     @trace_func
     def _init_view(self, view):
@@ -83,9 +86,12 @@ class SignetEvent(sublime_plugin.EventListener):
                     view.add_regions(SIGNET_REGION_NAME, regions, settings.get('signet_scope'), SIGNET_ICON)
 
     @trace_func
-    def _open_sigs(self, winid, project_fn):
+    def _open_sigs(self, window):
         ''' General project opener. '''
         global _sigs
+
+        winid = window.id()
+        project_fn = window.project_file_name()
 
         if project_fn is not None:
             store_fn = _get_store_fn(project_fn)
@@ -100,14 +106,12 @@ class SignetEvent(sublime_plugin.EventListener):
                 _sigs[winid] = {}
 
     @trace_func
-    def _save_sigs(self, winid, project_fn):
+    def _save_sigs(self, window):
         ''' General project saver. '''
         global _sigs
 
-        # TODO signet doesn't stay in place if lines added/deleted. Need to collect from location in view. Like:
-        # for i, value in enumerate(highlight_scopes):
-        #     reg_name = HIGHLIGHT_REGION_NAME % value
-        #     self.view.erase_regions(reg_name)
+        winid = window.id()
+        project_fn = window.project_file_name()
 
         if project_fn is not None and winid in _sigs:
             store_fn = _get_store_fn(project_fn)
@@ -116,11 +120,13 @@ class SignetEvent(sublime_plugin.EventListener):
             # Safe iteration - accumulate elements to del later.
             del_els = []
 
-            for fn, _ in _sigs[winid].items():
+            sigs = _sigs[window.id()]
+
+            for fn, _ in sigs.items():
                 if fn is not None:
                     if not os.path.exists(fn):
                         del_els.append((winid, fn))
-                    elif len(_sigs[winid][fn]) == 0:
+                    elif len(sigs[fn]) == 0:
                         del_els.append((winid, fn))
 
             # Now remove from collection.
@@ -128,12 +134,23 @@ class SignetEvent(sublime_plugin.EventListener):
                 del _sigs[w][fn]
 
             # Now save, or delete if empty.
-            if len(_sigs[winid]) > 0:
+            if len(sigs) > 0:
                 with open(store_fn, 'w') as fp:
-                    json.dump(_sigs[winid], fp, indent=4)
+                    json.dump(sigs, fp, indent=4)
             elif os.path.isfile(store_fn):
                 os.remove(store_fn)
 
+    def _collect_sigs(self, view):
+        ''' Update the signets as they may have moved during editing. '''
+        fn = view.file_name()
+        print(f'*** {fn}')
+        if(fn in _sigs):
+            sigs[fn].clear()
+            regions = view.get_regions(SIGNET_REGION_NAME)
+            for reg in regions:
+                row, col = view.rowcol(reg.a)
+                print(f'*** {row}')
+                sigs[fn].append(row + 1)
 
 #-----------------------------------------------------------------------------------
 class SbotToggleSignetCommand(sublime_plugin.TextCommand):
