@@ -7,19 +7,19 @@ Enhanced bookmarks:
 - Next/previous (optionally) traverses files in project - like VS.
 - Builtin bookmark key mappings have been stolen:
     - `ctrl+f2`: sbot_toggle_signet
-    - `f2`: sbot_next_signet
-    - `shift+f2`: sbot_previous_signet
+    - `f2`: sbot_goto_signet - next
+    - `shift+f2`: sbot_goto_signet - prev
     - `ctrl+shift+f2`: sbot_clear_signets
 
 Built for ST4 on Windows and Linux.
 
 ## Commands
-| Command                    | Implementation | Description                   | Args        |
-| :--------                  | :-------       | :-------                      | :--------   |
-| `sbot_toggle_signet`       | Context, Main  | Toggle signet at row          |             |
-| `sbot_next_signet`         | Context, Main  | Goto next signet              |             |
-| `sbot_previous_signet`     | Context, Main  | Goto previous signet          |             |
-| `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |             |
+| Command                    | Implementation | Description                   | Args             |
+| :--------                  | :-------       | :-------                      | :--------        |
+| `sbot_toggle_signet`       | Context, Main  | Toggle signet at row          |                  |
+| `sbot_goto_signet`         | Context, Main  | Goto next signet              | 'where' = 'next' |
+| `sbot_goto_signet`         | Context, Main  | Goto previous signet          | 'where' = 'prev' |
+| `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |                  |
 
 ## Settings
 | Setting              | Description                      | Options   |

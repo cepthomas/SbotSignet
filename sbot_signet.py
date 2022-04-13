@@ -43,7 +43,7 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_func
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
-        self._open_sigs(window.id())
+        self._open_sigs(window)
         for view in window.views():
             self._init_view(view)
 
@@ -142,13 +142,11 @@ class SignetEvent(sublime_plugin.EventListener):
     def _collect_sigs(self, view):
         ''' Update the signets as they may have moved during editing. '''
         fn = view.file_name()
-        print(f'*** {fn}')
         if(fn in _sigs):
             sigs[fn].clear()
             regions = view.get_regions(SIGNET_REGION_NAME)
             for reg in regions:
                 row, col = view.rowcol(reg.a)
-                print(f'*** {row}')
                 sigs[fn].append(row + 1)
 
 #-----------------------------------------------------------------------------------
@@ -198,6 +196,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         next = where == 'next'
         ''' Common navigate to signet in whole collection. next if True else prev. '''
 
+        view = self.view
         window = view.window()
         winid = window.id()
 
