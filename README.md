@@ -13,6 +13,8 @@ Enhanced bookmarks:
 
 Built for ST4 on Windows and Linux.
 
+Requires SbotCommon plugin.
+
 ## Commands
 | Command                    | Implementation | Description                   | Args             |
 | :--------                  | :-------       | :-------                      | :--------        |
