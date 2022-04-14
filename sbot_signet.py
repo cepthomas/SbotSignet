@@ -6,7 +6,7 @@ import sublime_plugin
 
 try:
     from SbotCommon.sbot_common import trace_function, trace_method, get_store_fn
-except ModuleNotFoundError as e:
+except ModuleNotFoundError as e: #TODO probably unload. Do all of these.
     sublime.message_dialog('SbotSignet plugin requires SbotCommon plugin')
 
 
@@ -47,7 +47,8 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_method
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
-        self._save_sigs(window)
+        # self._save_sigs(window)
+        pass
 
     @trace_method
     def on_load(self, view):
@@ -58,7 +59,12 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
         self._collect_sigs(view)
-        self._save_sigs(view.window())
+        # self._save_sigs(view.window())
+        pass
+
+    @trace_method
+    def on_close(self, view):
+        pass
 
     @trace_method
     def _init_view(self, view):
@@ -140,15 +146,20 @@ class SignetEvent(sublime_plugin.EventListener):
             elif os.path.isfile(store_fn):
                 os.remove(store_fn)
 
+    @trace_method
     def _collect_sigs(self, view):
         ''' Update the signets as they may have moved during editing. '''
+        print(f'*** {_sigs}')                
+        
         fn = view.file_name()
         if(fn in _sigs):
-            sigs[fn].clear()
+            _sigs[fn].clear()
             regions = view.get_regions(SIGNET_REGION_NAME)
             for reg in regions:
                 row, col = view.rowcol(reg.a)
-                sigs[fn].append(row + 1)
+                _sigs[fn].append(row + 1)
+
+        print(f'*** {fn} {_sigs[fn] if fn in _sigs else "nada"}')                
 
 #-----------------------------------------------------------------------------------
 class SbotToggleSignetCommand(sublime_plugin.TextCommand):
