@@ -47,7 +47,7 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_method
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
-        # self._save_sigs(window)
+        self._save_sigs(window)
         pass
 
     @trace_method
@@ -58,9 +58,17 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_method
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        self._collect_sigs(view)
+        # Window may or may noot be valid here.
+        # self._collect_sigs(view)
+        # print(f'*** {view.window()}')
         # self._save_sigs(view.window())
         pass
+
+    @trace_method
+    def on_deactivated(self, view):
+        # Window is still valid here.
+        self._collect_sigs(view)
+        # print(f'*** {view.window()}')
 
     @trace_method
     def on_close(self, view):
@@ -122,44 +130,62 @@ class SignetEvent(sublime_plugin.EventListener):
             # Safe iteration - accumulate elements to del later.
             del_els = []
 
-            sigs = _sigs[window.id()]
+            win_sigs = _sigs[window.id()]
 
-            for fn, _ in sigs.items():
+            for fn, _ in win_sigs.items():
                 if fn is not None:
                     if not os.path.exists(fn):
                         del_els.append((winid, fn))
-                    elif len(sigs[fn]) == 0:
+                    elif len(win_sigs[fn]) == 0:
                         del_els.append((winid, fn))
 
             # Now remove from collection.
-            for (w, fn) in del_els:
-                del _sigs[w][fn]
+            for (winid, fn) in del_els:
+                del _sigs[winid][fn]
 
             # Update the signets as they may have moved during editing.
             for view in window.views():
                 self._collect_sigs(view)
 
             # Now save, or delete if empty.
-            if len(sigs) > 0:
+            if len(win_sigs) > 0:
                 with open(store_fn, 'w') as fp:
-                    json.dump(sigs, fp, indent=4)
+                    json.dump(win_sigs, fp, indent=4)
             elif os.path.isfile(store_fn):
                 os.remove(store_fn)
 
     @trace_method
     def _collect_sigs(self, view):
         ''' Update the signets as they may have moved during editing. '''
-        print(f'*** {_sigs}')                
-        
-        fn = view.file_name()
-        if(fn in _sigs):
-            _sigs[fn].clear()
-            regions = view.get_regions(SIGNET_REGION_NAME)
-            for reg in regions:
-                row, col = view.rowcol(reg.a)
-                _sigs[fn].append(row + 1)
 
-        print(f'*** {fn} {_sigs[fn] if fn in _sigs else "nada"}')                
+        fn = view.file_name()
+        window = view.window()
+        # print(f'*** _collect_sigs1 {fn} {view} {window}')
+
+        if(fn is not None and window is not None):
+            win_sigs = _sigs[window.id()]
+            # print(f'*** _collect_sigs2 {win_sigs}')
+
+            regions = view.get_regions(SIGNET_REGION_NAME)
+            # print(f'*** _collect_sigs3 {regions}')
+
+            if len(regions) > 0:
+                if fn in win_sigs:
+                    win_sigs[fn].clear()
+                else:
+                    win_sigs[fn] = []
+                for reg in regions:
+                    row, col = view.rowcol(reg.a)
+                    win_sigs[fn].append(row + 1)
+                    # print(f'*** r:{row} c:{col}')
+            else:
+                try:
+                    win_sigs.delete(fn)
+                except:
+                    pass
+
+
+        # print(f'*** _collect_sigs2 {fn} {win_sigs[fn] if fn in win_sigs else "nada"}')
 
 #-----------------------------------------------------------------------------------
 class SbotToggleSignetCommand(sublime_plugin.TextCommand):
