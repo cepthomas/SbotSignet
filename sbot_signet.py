@@ -20,6 +20,7 @@ SIGNET_FILE_EXT = '.sbot-sigs'
 # Key is current window id, value is the collection of file/line signet locations.
 _sigs = {}
 
+# TODO fp = settings.get("file_path") if len(settings.get("file_path")) > 0 else os.path.join(sublime.packages_path(), 'User', 'SbotStore')
 
 #-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
@@ -236,8 +237,8 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
     ''' Navigate to next/prev signet in whole collection. '''
 
     def run(self, edit, where):
+        ''' Common navigate to signet in whole collection. '''
         next = where == 'next'
-        ''' Common navigate to signet in whole collection. next if True else prev. '''
 
         view = self.view
         window = view.window()
