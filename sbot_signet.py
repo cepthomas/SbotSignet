@@ -6,8 +6,8 @@ import sublime_plugin
 
 try:
     from SbotCommon.sbot_common import trace_function, trace_method, get_store_fn
-except ModuleNotFoundError as e: #TODO probably unload. Do all of these.
-    sublime.message_dialog('SbotSignet plugin requires SbotCommon plugin')
+except ModuleNotFoundError as e:
+    raise ImportError('SbotSignet plugin requires SbotCommon plugin')
 
 
 # Definitions.
@@ -58,17 +58,12 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_method
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        # Window may or may noot be valid here.
-        # self._collect_sigs(view)
-        # print(f'*** {view.window()}')
-        # self._save_sigs(view.window())
         pass
 
     @trace_method
     def on_deactivated(self, view):
         # Window is still valid here.
         self._collect_sigs(view)
-        # print(f'*** {view.window()}')
 
     @trace_method
     def on_close(self, view):
@@ -77,6 +72,7 @@ class SignetEvent(sublime_plugin.EventListener):
     @trace_method
     def _init_view(self, view):
         ''' Lazy init. '''
+        global _sigs
         fn = view.file_name()
         if view.is_scratch() is False and fn is not None:
             # Init the view if not already.
@@ -84,8 +80,14 @@ class SignetEvent(sublime_plugin.EventListener):
             if vid not in self.views_inited:
                 self.views_inited.add(vid)
 
-                # Init the view with any persist values.
-                rows = _get_persist_rows(view, False)
+                # Init the view with any persisted values.
+                rows = None  # Default
+                winid = view.window().id()
+                fn = view.file_name()
+                if winid in _sigs:
+                    if fn in _sigs[winid]:
+                        rows = _sigs[winid][fn]
+
                 if rows is not None:
                     # Update visual signets, brutally. This is the ST way.
                     regions = []
@@ -160,14 +162,10 @@ class SignetEvent(sublime_plugin.EventListener):
 
         fn = view.file_name()
         window = view.window()
-        # print(f'*** _collect_sigs1 {fn} {view} {window}')
 
         if(fn is not None and window is not None):
             win_sigs = _sigs[window.id()]
-            # print(f'*** _collect_sigs2 {win_sigs}')
-
             regions = view.get_regions(SIGNET_REGION_NAME)
-            # print(f'*** _collect_sigs3 {regions}')
 
             if len(regions) > 0:
                 if fn in win_sigs:
@@ -177,15 +175,12 @@ class SignetEvent(sublime_plugin.EventListener):
                 for reg in regions:
                     row, col = view.rowcol(reg.a)
                     win_sigs[fn].append(row + 1)
-                    # print(f'*** r:{row} c:{col}')
             else:
                 try:
                     win_sigs.delete(fn)
                 except:
                     pass
 
-
-        # print(f'*** _collect_sigs2 {fn} {win_sigs[fn] if fn in win_sigs else "nada"}')
 
 #-----------------------------------------------------------------------------------
 class SbotToggleSignetCommand(sublime_plugin.TextCommand):
@@ -196,10 +191,12 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
         return self.view.is_scratch() is False and self.view.file_name() is not None
 
     def run(self, edit):
+        global _sigs
+
         # Get current row.
         sel_row, _ = self.view.rowcol(self.view.sel()[0].a)
 
-        drows = _get_display_signet_rows(self.view)
+        drows = _get_view_signet_rows(self.view)
 
         if sel_row != -1:
             # Is there one currently at the selected row?
@@ -210,7 +207,15 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
                 drows.append(sel_row)
 
         # Update collection.
-        crows = _get_persist_rows(self.view, True)
+        crows = None  # Default
+        winid = self.view.window().id()
+        fn = self.view.file_name()
+
+        if winid in _sigs:
+            if fn not in _sigs[winid]:
+                # Add a new one.
+                _sigs[winid][fn] = []
+
         if crows is not None:
             crows.clear()
             for r in drows:
@@ -239,23 +244,22 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         winid = window.id()
 
         if winid not in _sigs:
-            return
+            return # --- early return
 
         settings = sublime.load_settings("SbotSignet.sublime-settings")
         signet_nav_files = settings.get('signet_nav_files')
 
         done = False
-        sel_row, _ = view.rowcol(view.sel()[0].a)  # current sel
+        sel_row, _ = view.rowcol(view.sel()[0].a)  # current selected row
         incr = +1 if next else -1
         array_end = 0 if next else -1
 
         # 1) next: If there's another bookmark below >>> goto it
         # 1) prev: If there's another bookmark above >>> goto it
         if not done:
-            sig_rows = _get_display_signet_rows(view)
-            if next:
+            sig_rows = _get_view_signet_rows(view)
+            if not next:
                 sig_rows.reverse()
-
             for sr in sig_rows:
                 if (next and sr > sel_row) or (not next and sr < sel_row):
                     view.run_command("goto_line", {"line": sr + 1})
@@ -273,7 +277,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             view_index = window.get_view_index(view)[1] + incr
             while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
                 vv = window.views()[view_index]
-                sig_rows = _get_display_signet_rows(vv)
+                sig_rows = _get_view_signet_rows(vv)
                 if len(sig_rows) > 0:
                     window.focus_view(vv)
                     vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
@@ -302,13 +306,14 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             view_index = 0 if next else len(window.views()) - 1
             while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
                 vv = window.views()[view_index]
-                sig_rows = _get_display_signet_rows(vv)
+                sig_rows = _get_view_signet_rows(vv)
                 if len(sig_rows) > 0:
                     window.focus_view(vv)
                     vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
                     done = True
                 else:
                     view_index += incr
+
 
 #-----------------------------------------------------------------------------------
 class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
@@ -337,34 +342,11 @@ def _wait_load_file(view, line):
 
 
 #-----------------------------------------------------------------------------------
-def _get_display_signet_rows(view):
+def _get_view_signet_rows(view):
     ''' Get all the signet row numbers in the view. Returns a sorted list. '''
-
     sig_rows = []
     for reg in view.get_regions(SIGNET_REGION_NAME):
         row, _ = view.rowcol(reg.a)
         sig_rows.append(row)
     sig_rows.sort()
     return sig_rows
-
-
-#-----------------------------------------------------------------------------------
-def _get_persist_rows(view, init_empty):
-    ''' General helper to get the data values from collection. If init_empty and there are none, add a default value. '''
-
-    global _sigs
-
-    vals = None  # Default
-    winid = view.window().id()
-    fn = view.file_name()
-
-    if winid in _sigs:
-        if fn not in _sigs[winid]:
-            if init_empty:
-                # Add a new one.
-                _sigs[winid][fn] = []
-                vals = _sigs[winid][fn]
-        else:
-            vals = _sigs[winid][fn]
-
-    return vals
