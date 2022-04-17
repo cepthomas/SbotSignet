@@ -20,7 +20,6 @@ SIGNET_FILE_EXT = '.sbot-sigs'
 # Key is current window id, value is the collection of file/line signet locations.
 _sigs = {}
 
-# TODO fp = settings.get("file_path") if len(settings.get("file_path")) > 0 else os.path.join(sublime.packages_path(), 'User', 'SbotStore')
 
 #-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
