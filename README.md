@@ -24,7 +24,8 @@ Requires SbotCommon plugin.
 | `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |                  |
 
 ## Settings
-| Setting              | Description                      | Options   |
-| :--------            | :-------                         | :------   |
-| `signet_scope`       | Scope name for gutter icon color |           |
-| `signet_nav_files`   | Traverse  extent                 | `true` = all files OR `false` = just current file  |
+| Setting              | Description                        | Options   |
+| :--------            | :-------                           | :------   |
+| `file_path`          | Full path to the persistence file  | if empty default is `%data_dir%\Packages\User\SbotStore` |
+| `scope`              | Scope name for gutter icon color   |           |
+| `nav_files`          | Traverse  extent                   | `true` = all files OR `false` = just current file  |

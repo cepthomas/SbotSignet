@@ -27,13 +27,17 @@ class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. See lifecycle notes in README.md. '''
 
     # Need to track what's been initialized.
-    views_inited = set()
+    _views_inited = set()
+    _store_fn = None
 
     @trace_method
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
         view = views[0]
+        settings = sublime.load_settings("SbotHighlight.sublime-settings")
+        project_fn = view.window().project_file_name()
+        self._store_fn = get_store_fn(settings.get('file_path'), project_fn, SIGNET_FILE_EXT)
         self._open_sigs(view.window())
         for view in views:
             self._init_view(view)
@@ -78,8 +82,8 @@ class SignetEvent(sublime_plugin.EventListener):
         if view.is_scratch() is False and fn is not None:
             # Init the view if not already.
             vid = view.id()
-            if vid not in self.views_inited:
-                self.views_inited.add(vid)
+            if vid not in self._views_inited:
+                self._views_inited.add(vid)
 
                 # Init the view with any persisted values.
                 rows = None  # Default
@@ -96,7 +100,7 @@ class SignetEvent(sublime_plugin.EventListener):
                         pt = view.text_point(r - 1, 0)  # ST is 0-based
                         regions.append(sublime.Region(pt, pt))
                     settings = sublime.load_settings("SbotSignet.sublime-settings")
-                    view.add_regions(SIGNET_REGION_NAME, regions, settings.get('signet_scope'), SIGNET_ICON)
+                    view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
     @trace_method
     def _open_sigs(self, window):
@@ -106,11 +110,11 @@ class SignetEvent(sublime_plugin.EventListener):
         winid = window.id()
         project_fn = window.project_file_name()
 
-        if project_fn is not None:
-            store_fn = get_store_fn(project_fn, SIGNET_FILE_EXT)
+        if self._store_fn is not None:
+            winid = window.id()
 
-            if os.path.isfile(store_fn):
-                with open(store_fn, 'r') as fp:
+            if os.path.isfile(self._store_fn):
+                with open(self._store_fn, 'r') as fp:
                     values = json.load(fp)
                     _sigs[winid] = values
             else:
@@ -123,11 +127,8 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' General project saver. '''
         global _sigs
 
-        winid = window.id()
-        project_fn = window.project_file_name()
-
-        if project_fn is not None and winid in _sigs:
-            store_fn = get_store_fn(project_fn, SIGNET_FILE_EXT)
+        if self._store_fn is not None:
+            winid = window.id()
 
             # Remove invalid files and any empty values.
             # Safe iteration - accumulate elements to del later.
@@ -152,10 +153,10 @@ class SignetEvent(sublime_plugin.EventListener):
 
             # Now save, or delete if empty.
             if len(win_sigs) > 0:
-                with open(store_fn, 'w') as fp:
+                with open(self._store_fn, 'w') as fp:
                     json.dump(win_sigs, fp, indent=4)
-            elif os.path.isfile(store_fn):
-                os.remove(store_fn)
+            elif os.path.isfile(self._store_fn):
+                os.remove(self._store_fn)
 
     @trace_method
     def _collect_sigs(self, view):
@@ -229,7 +230,7 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
             regions.append(sublime.Region(pt, pt))
 
         settings = sublime.load_settings("SbotSignet.sublime-settings")
-        self.view.add_regions(SIGNET_REGION_NAME, regions, settings.get('signet_scope'), SIGNET_ICON)
+        self.view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
 
 #-----------------------------------------------------------------------------------
@@ -248,7 +249,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             return # --- early return
 
         settings = sublime.load_settings("SbotSignet.sublime-settings")
-        signet_nav_files = settings.get('signet_nav_files')
+        nav_files = settings.get('nav_files')
 
         done = False
         sel_row, _ = view.rowcol(view.sel()[0].a)  # current selected row
@@ -268,7 +269,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                     break
 
             # At begin or end. Check for single file operation.
-            if not done and not signet_nav_files and len(sig_rows) > 0:
+            if not done and not nav_files and len(sig_rows) > 0:
                 view.run_command("goto_line", {"line": sig_rows[0] + 1})
                 done = True
 

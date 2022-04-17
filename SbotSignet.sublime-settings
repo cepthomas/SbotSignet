@@ -1,5 +1,6 @@
 {
     // Signet settings - see README.md //
-    "signet_scope": "keyword",
-    "signet_nav_files": true,
+    "file_path": "",
+    "scope": "keyword",
+    "nav_files": true,
 }
