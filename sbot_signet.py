@@ -5,7 +5,7 @@ import sublime
 import sublime_plugin
 
 try:
-    from SbotCommon.sbot_common import trace_function, trace_method, get_store_fn
+    from SbotCommon.sbot_common import get_store_fn, log_message
 except ModuleNotFoundError as e:
     raise ImportError('SbotSignet plugin requires SbotCommon plugin')
 
@@ -22,17 +22,23 @@ _sigs = {}
 
 
 #-----------------------------------------------------------------------------------
+def plugin_loaded():
+    log_message('FUNC')
+    pass
+
+
+#-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
-    ''' Listener for view specific events of interest. See lifecycle notes in README.md. '''
+    ''' Listener for view specific events of interest. '''
 
     # Need to track what's been initialized.
     _views_inited = set()
     _store_fn = None
 
-    @trace_method
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
+        log_message('METH')
         view = views[0]
         settings = sublime.load_settings("SbotHighlight.sublime-settings")
         project_fn = view.window().project_file_name()
@@ -41,39 +47,36 @@ class SignetEvent(sublime_plugin.EventListener):
         for view in views:
             self._init_view(view)
 
-    @trace_method
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
+        log_message('METH')
         self._open_sigs(window)
         for view in window.views():
             self._init_view(view)
 
-    @trace_method
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
+        log_message('METH')
         self._save_sigs(window)
         pass
 
-    @trace_method
     def on_load(self, view):
         ''' Load a file. '''
+        log_message('METH')
         self._init_view(view)
 
-    @trace_method
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        pass
+        log_message('METH')
 
-    @trace_method
     def on_deactivated(self, view):
         # Window is still valid here.
+        log_message('METH')
         self._collect_sigs(view)
 
-    @trace_method
     def on_close(self, view):
-        pass
+        log_message('METH')
 
-    @trace_method
     def _init_view(self, view):
         ''' Lazy init. '''
         global _sigs
@@ -101,7 +104,6 @@ class SignetEvent(sublime_plugin.EventListener):
                     settings = sublime.load_settings("SbotSignet.sublime-settings")
                     view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
-    @trace_method
     def _open_sigs(self, window):
         ''' General project opener. '''
         global _sigs
@@ -121,7 +123,6 @@ class SignetEvent(sublime_plugin.EventListener):
                 sublime.status_message('Creating new signets file')
                 _sigs[winid] = {}
 
-    @trace_method
     def _save_sigs(self, window):
         ''' General project saver. '''
         global _sigs
@@ -157,7 +158,6 @@ class SignetEvent(sublime_plugin.EventListener):
             elif os.path.isfile(self._store_fn):
                 os.remove(self._store_fn)
 
-    @trace_method
     def _collect_sigs(self, view):
         ''' Update the signets as they may have moved during editing. '''
 
