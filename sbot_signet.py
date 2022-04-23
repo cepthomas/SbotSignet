@@ -1,12 +1,11 @@
 import os
 import json
-import pathlib
 import sublime
 import sublime_plugin
 
 try:
-    from SbotCommon.sbot_common import get_store_fn, log_message
-except ModuleNotFoundError as e:
+    from SbotCommon.sbot_common import get_store_fn, slog
+except ModuleNotFoundError:
     raise ImportError('SbotSignet plugin requires SbotCommon plugin')
 
 
@@ -16,14 +15,14 @@ SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
 SIGNET_FILE_EXT = '.sbot-sigs'
 
 
-# The current signet collections. This is global across all ST instances/window/project.
+# The current signet collections. This is global across all ST instances/window/project. TODO test with multiple windows - or refactor?
 # Key is current window id, value is the collection of file/line signet locations.
 _sigs = {}
 
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
-    log_message('FUNC')
+    # slog('FUNC')
     pass
 
 
@@ -38,7 +37,6 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-        log_message('METH')
         view = views[0]
         settings = sublime.load_settings("SbotHighlight.sublime-settings")
         project_fn = view.window().project_file_name()
@@ -49,33 +47,29 @@ class SignetEvent(sublime_plugin.EventListener):
 
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
-        log_message('METH')
         self._open_sigs(window)
         for view in window.views():
             self._init_view(view)
 
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
-        log_message('METH')
         self._save_sigs(window)
         pass
 
     def on_load(self, view):
         ''' Load a file. '''
-        log_message('METH')
         self._init_view(view)
 
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        log_message('METH')
+        pass
 
     def on_deactivated(self, view):
         # Window is still valid here.
-        log_message('METH')
         self._collect_sigs(view)
 
     def on_close(self, view):
-        log_message('METH')
+        pass
 
     def _init_view(self, view):
         ''' Lazy init. '''
@@ -109,7 +103,7 @@ class SignetEvent(sublime_plugin.EventListener):
         global _sigs
 
         winid = window.id()
-        project_fn = window.project_file_name()
+        # project_fn = window.project_file_name()
 
         if self._store_fn is not None:
             winid = window.id()
@@ -164,7 +158,7 @@ class SignetEvent(sublime_plugin.EventListener):
         fn = view.file_name()
         window = view.window()
 
-        if(fn is not None and window is not None):
+        if(fn is not None and window is not None and window.id() in _sigs):
             win_sigs = _sigs[window.id()]
             regions = view.get_regions(SIGNET_REGION_NAME)
 
@@ -245,7 +239,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         winid = window.id()
 
         if winid not in _sigs:
-            return # --- early return
+            return  # --- early return
 
         settings = sublime.load_settings("SbotSignet.sublime-settings")
         nav_files = settings.get('nav_files')
