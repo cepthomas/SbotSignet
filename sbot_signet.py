@@ -22,7 +22,6 @@ _sigs = {}
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
-    # slog('FUNC')
     pass
 
 
@@ -54,7 +53,6 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
         self._save_sigs(window)
-        pass
 
     def on_load(self, view):
         ''' Load a file. '''
@@ -62,7 +60,8 @@ class SignetEvent(sublime_plugin.EventListener):
 
     def on_pre_close(self, view):
         ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        pass
+        # Window is still valid here.
+        self._collect_sigs(view)
 
     def on_deactivated(self, view):
         # Window is still valid here.
