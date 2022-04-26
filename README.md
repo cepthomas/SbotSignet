@@ -1,7 +1,8 @@
 # What It Is
+
 Enhanced bookmarks:
 
-- `Bookmark` and `mark` are already taken so I shall use `signet` which means in French:
+- `Bookmark` and `mark` are already taken so I use `signet` which means in French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
 - Persists per document to sbot-sigs file.
 - Next/previous (optionally) traverses files in project - like VS.
@@ -13,7 +14,7 @@ Enhanced bookmarks:
 
 Built for ST4 on Windows and Linux.
 
-Requires SbotCommon plugin.
+Requires [SbotCommon](https://github.com/cepthomas/SbotCommon) plugin.
 
 ## Commands
 | Command                    | Implementation | Description                   | Args             |
@@ -24,8 +25,8 @@ Requires SbotCommon plugin.
 | `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |                  |
 
 ## Settings
-| Setting              | Description                        | Options   |
-| :--------            | :-------                           | :------   |
-| `file_path`          | Full path to the persistence file  | if empty default is `%data_dir%\Packages\User\SbotStore` |
-| `scope`              | Scope name for gutter icon color   |           |
-| `nav_files`          | Traverse  extent                   | `true` = all files OR `false` = just current file  |
+| Setting              | Description                          | Options                                                  |
+| :--------            | :-------                             | :------                                                  |
+| `file_path`          | Path to the persistence file folder  | if empty default is `%data_dir%\Packages\User\SbotStore` |
+| `scope`              | Scope name for gutter icon color     |                                                          |
+| `nav_files`          | Traverse  extent                     | `true` = all files OR `false` = just current file        |
