@@ -6,6 +6,7 @@ import sublime_plugin
 try:
     from SbotCommon.sbot_common import get_store_fn_for_project, slog
 except ModuleNotFoundError:
+    sublime.message_dialog('SbotSignet plugin requires SbotCommon plugin')
     raise ImportError('SbotSignet plugin requires SbotCommon plugin')
 
 
@@ -13,6 +14,7 @@ except ModuleNotFoundError:
 SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
 SIGNET_FILE_EXT = '.sbot-sigs'
+SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 
 
 # The current signet collections. This is global across all ST instances/window/project. TODO test with multiple windows - or refactor?
@@ -37,7 +39,7 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
         view = views[0]
-        settings = sublime.load_settings("SbotHighlight.sublime-settings")
+        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         project_fn = view.window().project_file_name()
         self._store_fn = get_store_fn_for_project(settings.get('file_path'), project_fn, SIGNET_FILE_EXT)
         self._open_sigs(view.window())
@@ -94,7 +96,7 @@ class SignetEvent(sublime_plugin.EventListener):
                     for r in rows:
                         pt = view.text_point(r - 1, 0)  # ST is 0-based
                         regions.append(sublime.Region(pt, pt))
-                    settings = sublime.load_settings("SbotSignet.sublime-settings")
+                    settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
                     view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
     def _open_sigs(self, window):
@@ -221,7 +223,7 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
             pt = self.view.text_point(r, 0)  # 0-based
             regions.append(sublime.Region(pt, pt))
 
-        settings = sublime.load_settings("SbotSignet.sublime-settings")
+        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         self.view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
 
@@ -240,7 +242,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         if winid not in _sigs:
             return  # --- early return
 
-        settings = sublime.load_settings("SbotSignet.sublime-settings")
+        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         nav_files = settings.get('nav_files')
 
         done = False
