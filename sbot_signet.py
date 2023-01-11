@@ -17,7 +17,7 @@ SIGNET_FILE_EXT = '.sbot-sigs'
 SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 
 
-# The current signet collections. This is global across all ST instances/window/project. TODO test with multiple windows - or refactor?
+# The current signet collections. This is global across all ST instances/window/project.
 # Key is current window id, value is the collection of file/line signet locations.
 _sigs = {}
 
