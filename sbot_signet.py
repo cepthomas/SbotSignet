@@ -4,7 +4,7 @@ import sublime
 import sublime_plugin
 
 try:
-    from SbotCommon.sbot_common import get_store_fn_for_project, slog
+    import SbotCommon.sbot_common as sbot
 except ModuleNotFoundError:
     sublime.message_dialog('SbotSignet plugin requires SbotCommon plugin')
     raise ImportError('SbotSignet plugin requires SbotCommon plugin')
@@ -43,7 +43,7 @@ class SignetEvent(sublime_plugin.EventListener):
         view = views[0]
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         project_fn = view.window().project_file_name()
-        self._store_fn = get_store_fn_for_project(settings.get('file_path'), project_fn, SIGNET_FILE_EXT)
+        self._store_fn = sbot.get_store_fn_for_project(settings.get('file_path'), project_fn, SIGNET_FILE_EXT)
         self._open_sigs(view.window())
         for view in views:
             self._init_view(view)
