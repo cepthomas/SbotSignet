@@ -16,6 +16,9 @@ Built for ST4 on Windows and Linux.
 
 Requires [SbotCommon](https://github.com/cepthomas/SbotCommon) plugin.
 
+Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
+
+
 ## Commands
 | Command                    | Implementation | Description                   | Args             |
 | :--------                  | :-------       | :-------                      | :--------        |
@@ -27,6 +30,5 @@ Requires [SbotCommon](https://github.com/cepthomas/SbotCommon) plugin.
 ## Settings
 | Setting              | Description                          | Options                                                  |
 | :--------            | :-------                             | :------                                                  |
-| `file_path`          | Path to the persistence file folder  | if empty default is `%data_dir%\Packages\User\.SbotStore`|
 | `scope`              | Scope name for gutter icon color     |                                                          |
 | `nav_files`          | Traverse  extent                     | `true` = all files OR `false` = just current file        |
