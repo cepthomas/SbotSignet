@@ -22,13 +22,13 @@ Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
 ## Commands
 | Command                    | Implementation | Description                   | Args             |
 | :--------                  | :-------       | :-------                      | :--------        |
-| `sbot_toggle_signet`       | Context, Main  | Toggle signet at row          |                  |
-| `sbot_goto_signet`         | Context, Main  | Goto next signet              | 'where' = 'next' |
-| `sbot_goto_signet`         | Context, Main  | Goto previous signet          | 'where' = 'prev' |
-| `sbot_clear_all_signets`   | Context, Main  | Clear all signets             |                  |
+| sbot_toggle_signet         | Context, Main  | Toggle signet at row          |                  |
+| sbot_goto_signet           | Context, Main  | Goto next signet              | where = next     |
+| sbot_goto_signet           | Context, Main  | Goto previous signet          | where = prev     |
+| sbot_clear_all_signets     | Context, Main  | Clear all signets             |                  |
 
 ## Settings
 | Setting              | Description                          | Options                                                  |
 | :--------            | :-------                             | :------                                                  |
-| `scope`              | Scope name for gutter icon color     |                                                          |
-| `nav_files`          | Traverse  extent                     | `true` = all files OR `false` = just current file        |
+| scope                | Scope name for gutter icon color     |                                                          |
+| nav_files            | Traverse  extent                     | true = all files OR false = just current file            |
