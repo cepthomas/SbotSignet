@@ -1,7 +1,6 @@
 # What It Is
 
 Enhanced bookmarks:
-
 - `Bookmark` and `mark` are already taken so I use `signet` which means in French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
 - Persists per document to sbot-sigs file.
