@@ -1,6 +1,8 @@
 import sys
 import os
 import pathlib
+import platform
+import subprocess
 import enum
 import sublime
 import sublime_plugin
@@ -35,7 +37,9 @@ def slog(cat: str, message='???'):
     # class_name = frame.f_locals['self'].__class__.__name__
     # full_func = f'{class_name}.{func}'
 
-    print(f'{cat} {fn}:{line} {message}')
+    msg = f'{cat} {fn}:{line} {message}'
+    print(msg)
+
 
 #-----------------------------------------------------------------------------------
 def get_store_fn(fn):
@@ -74,3 +78,43 @@ def create_new_view(window, text):
     vnew.set_scratch(True)
     vnew.run_command('append', {'characters': text})  # insert has some odd behavior - indentation
     return vnew
+
+
+#-----------------------------------------------------------------------------------
+def wait_load_file(window, fpath, line):
+    ''' Open file asynchronously then position at line. Returns the new View or None if failed. '''
+    vnew = None
+
+    def _load(view):
+        if vnew.is_loading():
+            sublime.set_timeout(lambda: _load(vnew), 10)  # maybe not forever?
+        else:
+            vnew.run_command("goto_line", {"line": line})
+
+    # Open the file in a new view.
+    try:
+        vnew = window.open_file(fpath)
+        _load(vnew)
+    except Exception as e:
+        slog(CAT_ERR, f'Failed to open {fpath} {e}')
+        vnew = None
+
+    return vnew    
+
+
+#-----------------------------------------------------------------------------------
+def start_file(filepath):
+    ''' Like you double-clicked it. '''
+    ret = 0
+    try:
+        if platform.system() == 'Darwin':       # macOS
+            ret = subprocess.call(('open', filepath))
+        elif platform.system() == 'Windows':    # Windows
+            os.startfile(filepath)
+        else:                                   # linux variants
+            re = subprocess.call(('xdg-open', filepath))
+    except Exception as e:
+        slog(CAT_ERR, f'{e}')
+        ret = 999
+
+    return ret

@@ -286,10 +286,11 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             for fn, rows in _sigs[winid].items():
                 if fn is not None:
                     if window.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
-                        vv = window.open_file(fn)
-                        endrow = rows[array_end]
-                        sublime.set_timeout(lambda r=endrow: _wait_load_file(vv, r), 10)  # already 1-based in file
-                        window.focus_view(vv)
+                        vv = wait_load_file(window, fn, rows[array_end])
+                        # vv = window.open_file(fn)
+                        # endrow = rows[array_end]
+                        # sublime.set_timeout(lambda r=endrow: wait_load_file(vv, r), 10)  # already 1-based in file
+                        # window.focus_view(vv)
                         done = True
                         break
 
@@ -323,15 +324,6 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
         # Clear visuals in open views.
         for vv in self.view.window().views():
             vv.erase_regions(SIGNET_REGION_NAME)
-
-
-#-----------------------------------------------------------------------------------
-def _wait_load_file(view, line):
-    ''' Open file asynchronously then position at line. '''
-    if view.is_loading():
-        sublime.set_timeout(lambda: _wait_load_file(view, line), 100)  # maybe not forever?
-    else:  # good to go
-        view.run_command("goto_line", {"line": line})
 
 
 #-----------------------------------------------------------------------------------
