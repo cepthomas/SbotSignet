@@ -2,7 +2,7 @@ import os
 import json
 import sublime
 import sublime_plugin
-from .sbot_common import *
+from . import sbot_common as sc
 
 
 # Definitions.
@@ -38,7 +38,7 @@ class SignetEvent(sublime_plugin.EventListener):
         view = views[0]
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         project_fn = view.window().project_file_name()
-        self._store_fn = get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
+        self._store_fn = sc.get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
         self._open_sigs(view.window())
         for view in views:
             self._init_view(view)
@@ -156,7 +156,7 @@ class SignetEvent(sublime_plugin.EventListener):
         fn = view.file_name()
         window = view.window()
 
-        if(fn is not None and window is not None and window.id() in _sigs):
+        if fn is not None and window is not None and window.id() in _sigs:
             win_sigs = _sigs[window.id()]
             regions = view.get_regions(SIGNET_REGION_NAME)
 
@@ -286,7 +286,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             for fn, rows in _sigs[winid].items():
                 if fn is not None:
                     if window.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
-                        vv = wait_load_file(window, fn, rows[array_end])
+                        vv = sc.wait_load_file(window, fn, rows[array_end])
                         # vv = window.open_file(fn)
                         # endrow = rows[array_end]
                         # sublime.set_timeout(lambda r=endrow: wait_load_file(vv, r), 10)  # already 1-based in file
