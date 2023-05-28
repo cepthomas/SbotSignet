@@ -17,6 +17,8 @@ CAT_TRC = 'TRC'
 CAT_DBG = 'DBG'
 CAT_EXC = 'EXC'
 
+# This is shared across plugins.
+HIGHLIGHT_REGION_NAME = 'highlight_%s_region'
 
 #-----------------------------------------------------------------------------------
 def slog(cat: str, message='???'):
@@ -99,7 +101,7 @@ def wait_load_file(window, fpath, line):
         slog(CAT_ERR, f'Failed to open {fpath} {e}')
         vnew = None
 
-    return vnew    
+    return vnew
 
 
 #-----------------------------------------------------------------------------------
