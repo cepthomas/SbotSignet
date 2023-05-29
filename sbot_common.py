@@ -22,7 +22,8 @@ HIGHLIGHT_REGION_NAME = 'highlight_%s_region'
 
 #-----------------------------------------------------------------------------------
 def slog(cat: str, message='???'):
-    ''' Format a standard message with caller info and print it.
+    '''
+    Format a standard message with caller info and print it.
     Prints to sbot_logger if it is installed, otherwise goes to stdout aka ST console.
     Note that cat should be three chars or less.
     '''
@@ -115,6 +116,29 @@ def start_file(filepath):
             os.startfile(filepath)
         else:                                   # linux variants
             re = subprocess.call(('xdg-open', filepath))
+    except Exception as e:
+        slog(CAT_ERR, f'{e}')
+        ret = 999
+
+    return ret
+
+
+#-----------------------------------------------------------------------------------
+def run_script(filepath, window):
+    ''' Script runner. Currently only python. Creates a new view with output. '''
+    ret = 0
+    try:
+        cmd = ''
+        if filepath.endswith('.py'):
+            cmd = f'python "{filepath}"'
+
+        data = subprocess.run(cmd, capture_output=True, text=True)
+        output = data.stdout
+        errors = data.stderr
+        if len(errors) > 0:
+            output = output + '============ stderr =============\n' + errors
+        create_new_view(window, output)
+
     except Exception as e:
         slog(CAT_ERR, f'{e}')
         ret = 999
