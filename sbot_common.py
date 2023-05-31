@@ -3,6 +3,7 @@ import os
 import pathlib
 import platform
 import subprocess
+import collections
 import enum
 import sublime
 import sublime_plugin
@@ -10,15 +11,17 @@ import sublime_plugin
 
 # Internal categories.
 CAT_NON = '---'
-CAT_INF = 'INF'
-CAT_WRN = 'WRN'
 CAT_ERR = 'ERR'
-CAT_TRC = 'TRC'
+CAT_WRN = 'WRN'
+CAT_INF = 'INF'
 CAT_DBG = 'DBG'
-CAT_EXC = 'EXC'
+CAT_TRC = 'TRC'
+
+ALL_CATS = [CAT_NON, CAT_ERR, CAT_WRN, CAT_INF, CAT_DBG, CAT_TRC]
 
 # This is shared across plugins.
-HIGHLIGHT_REGION_NAME = 'highlight_%s_region'
+HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, tpe')
+
 
 #-----------------------------------------------------------------------------------
 def slog(cat: str, message='???'):
@@ -58,7 +61,6 @@ def get_store_fn_for_project(project_fn, file_ext):
     ''' General utility to get store file name based on ST project name. '''
     fn = os.path.basename(project_fn).replace('.sublime-project', file_ext)
     store_fn = get_store_fn(fn)
-    # slog(CAT_DBG, f'|{project_fn}|{file_ext}|{fn}|{store_fn}')
     return store_fn
 
 
@@ -99,7 +101,7 @@ def wait_load_file(window, fpath, line):
         vnew = window.open_file(fpath)
         _load(vnew)
     except Exception as e:
-        slog(CAT_ERR, f'Failed to open {fpath} {e}')
+        slog(CAT_ERR, f'Failed to open {fpath}: {e}')
         vnew = None
 
     return vnew
@@ -118,7 +120,7 @@ def start_file(filepath):
             re = subprocess.call(('xdg-open', filepath))
     except Exception as e:
         slog(CAT_ERR, f'{e}')
-        ret = 999
+        ret = 90
 
     return ret
 
@@ -141,6 +143,19 @@ def run_script(filepath, window):
 
     except Exception as e:
         slog(CAT_ERR, f'{e}')
-        ret = 999
+        ret = 91
 
     return ret
+
+
+#-----------------------------------------------------------------------------------
+def get_highlight_info(which='all'):
+    ''' Get list of builtin scope names and corresponding region names as list of HighlightInfo. '''
+    hl_info = []
+    if which == 'all' or which == 'user':
+        for i in range(6):  # magical knowledge
+            hl_info.append(HighlightInfo(f'markup.user_hl{i + 1}', f'region_user_hl{i + 1}', 'user'))
+    if which == 'all' or which == 'fixed':
+        for i in range(3):  # magical knowledge
+            hl_info.append(HighlightInfo(f'markup.fixed_hl{i + 1}', f'region_fixed_hl{i + 1}', 'fixed'))
+    return hl_info

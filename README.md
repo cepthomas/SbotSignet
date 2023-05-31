@@ -17,7 +17,7 @@ Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
 
 
 ## Commands
-| Command                    | Implementation | Description                   | Args             |
+| Command                    | Type           | Description                   | Args             |
 | :--------                  | :-------       | :-------                      | :--------        |
 | sbot_toggle_signet         | Context, Main  | Toggle signet at row          |                  |
 | sbot_goto_signet           | Context, Main  | Goto next signet              | where = next     |
