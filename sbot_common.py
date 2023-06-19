@@ -20,7 +20,7 @@ CAT_TRC = 'TRC'
 ALL_CATS = [CAT_NON, CAT_ERR, CAT_WRN, CAT_INF, CAT_DBG, CAT_TRC]
 
 # This is shared across plugins.
-HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, tpe')
+HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
 
 #-----------------------------------------------------------------------------------
