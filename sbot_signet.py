@@ -190,7 +190,11 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
         global _sigs
 
         # Get current row.
-        sel_row, _ = self.view.rowcol(self.view.sel()[0].a)
+        caret = sc.get_single_caret(self.view)
+        if caret is None:
+            return  # -- early return
+
+        sel_row, _ = self.view.rowcol(caret)
 
         drows = _get_view_signet_rows(self.view)
 
@@ -246,7 +250,12 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         nav_files = settings.get('nav_files')
 
         done = False
-        sel_row, _ = view.rowcol(view.sel()[0].a)  # current selected row
+
+        caret = sc.get_single_caret(view)
+        if caret is None:
+            return  # -- early return
+
+        sel_row, _ = view.rowcol(caret)  # current selected row
         incr = +1 if next else -1
         array_end = 0 if next else -1
 
