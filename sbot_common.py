@@ -1,12 +1,16 @@
 import sys
 import os
 import pathlib
+import shutil
 import platform
 import subprocess
 import collections
 import enum
 import sublime
 import sublime_plugin
+
+
+print(f'>>>>>>> Loading {__file__}')
 
 
 # Internal categories.
@@ -118,45 +122,45 @@ def wait_load_file(window, fpath, line):
     return vnew
 
 
-#-----------------------------------------------------------------------------------
-def start_file(filepath):
-    ''' Like you double-clicked it. '''
-    ret = 0
-    try:
-        if platform.system() == 'Darwin':       # macOS
-            ret = subprocess.call(('open', filepath))
-        elif platform.system() == 'Windows':    # Windows
-            os.startfile(filepath)
-        else:                                   # linux variants
-            re = subprocess.call(('xdg-open', filepath))
-    except Exception as e:
-        slog(CAT_ERR, f'{e}')
-        ret = 90
+# #-----------------------------------------------------------------------------------
+# def start_file(filepath):
+#     ''' Like you double-clicked it. '''
+#     ret = 0
+#     try:
+#         if platform.system() == 'Darwin':       # macOS
+#             ret = subprocess.call(('open', filepath))
+#         elif platform.system() == 'Windows':    # Windows
+#             os.startfile(filepath)
+#         else:                                   # linux variants
+#             re = subprocess.call(('xdg-open', filepath))
+#     except Exception as e:
+#         slog(CAT_ERR, f'{e}')
+#         ret = 90
 
-    return ret
+#     return ret
 
 
-#-----------------------------------------------------------------------------------
-def run_script(filepath, window):
-    ''' Script runner. Currently only python. Creates a new view with output. '''
-    ret = 0
-    try:
-        cmd = ''
-        if filepath.endswith('.py'):
-            cmd = f'python "{filepath}"'
+# #-----------------------------------------------------------------------------------
+# def run_script(filepath, window):
+#     ''' Script runner. Currently only python. Creates a new view with output. '''
+#     ret = 0
+#     try:
+#         cmd = ''
+#         if filepath.endswith('.py'):
+#             cmd = f'python "{filepath}"'
 
-        data = subprocess.run(cmd, capture_output=True, text=True)
-        output = data.stdout
-        errors = data.stderr
-        if len(errors) > 0:
-            output = output + '============ stderr =============\n' + errors
-        create_new_view(window, output)
+#         data = subprocess.run(cmd, capture_output=True, text=True)
+#         output = data.stdout
+#         errors = data.stderr
+#         if len(errors) > 0:
+#             output = output + '============ stderr =============\n' + errors
+#         create_new_view(window, output)
 
-    except Exception as e:
-        slog(CAT_ERR, f'{e}')
-        ret = 91
+#     except Exception as e:
+#         slog(CAT_ERR, f'{e}')
+#         ret = 91
 
-    return ret
+#     return ret
 
 
 #-----------------------------------------------------------------------------------
@@ -170,3 +174,208 @@ def get_highlight_info(which='all'):
         for i in range(3):  # magical knowledge
             hl_info.append(HighlightInfo(f'markup.fixed_hl{i + 1}', f'region_fixed_hl{i + 1}', 'fixed'))
     return hl_info
+
+
+
+#-----------------------------------------------------------------------------------
+# def exec_file(filepath): # replace sbot_common.run_script() and sbot_common.start_file()
+#     ''' Like you double-clicked it. or.... '''
+#     ''' Script runner. Currently only python. Creates a new view with output. '''
+
+#     its_a_script = False
+
+#     ret = 0
+    
+#     try:
+#         if its_a_script:
+#             # sbot_common.run_script()
+#             cmd = ''
+#             if filepath.endswith('.py'):
+#                 cmd = f'python "{filepath}"'
+
+#             data = subprocess.run(cmd, capture_output=True, text=True)
+#             output = data.stdout
+#             errors = data.stderr
+#             if len(errors) > 0:
+#                 output = output + '============ stderr =============\n' + errors
+#             create_new_view(window, output)
+
+#         else: # plain click click
+#             # sbot_common.start_file()
+#             if platform.system() == 'Darwin':
+#                 ret = subprocess.call(('open', filepath))
+#             elif platform.system() == 'Windows':
+#                 os.startfile(filepath)
+#             else:  # linux variants
+#                 re = subprocess.call(('xdg-open', filepath))
+#     except Exception as e:
+#         slog(CAT_ERR, f'{e}')
+#         ret = 90
+
+#     return ret
+
+
+# def _get_dir(paths):
+#     path = paths[0] if os.path.isdir(paths[0]) else os.path.split(paths[0])[0]
+#     return path
+
+# def _get_dir(view, paths):
+#     ''' Get the directory name containing the specified path. '''
+
+#     dirname = None
+
+#     if paths is None:
+#         # Get the view file.
+#         fn = view.file_name()
+#         if fn is not None:
+#             dirname = os.path.dirname(fn)
+#     elif len(paths) > 0:
+#         # Get the first element of paths - from sidebar.
+#         fn = paths[0]
+#         dirname = os.path.dirname(fn)
+
+#     return dirname
+
+# def _get_file(view, paths):
+#     ''' Get the selected file path. '''
+
+#     filename = None
+
+#     if paths is None:
+#         # Get the view file.
+#         filename = view.file_name()
+#     elif len(paths) > 0:
+#         # Get the first element of paths - from sidebar.
+#         filename = paths[0]
+
+#     return filename
+
+
+def _get_path(view, paths):
+    ''' Returns (dir, fn, path). fn is None for a directory. '''
+
+    dir = None
+    fn = None
+
+    path = None
+
+    if paths is None:
+        # Get the view file.
+        path = view.file_name()
+    elif len(paths) > 0:
+        # Get the first element of paths - from sidebar.
+        path = paths[0]
+
+    if path is not None:
+        if os.path.isdir(path):
+            dir = path
+        else:
+            ps = os.path.split(path)
+            dir = ps[0]
+            fn = ps[1]
+
+    return (dir, fn, path)
+
+
+
+#-----------------------------------------------------------------------------------
+class SbotExecCommand(sublime_plugin.WindowCommand): 
+    # like SbotSidebarRunScriptCommand, SbotUtilsRunScriptCommand, SbotUtilsExecCommand, SbotSidebarExecCommand,
+    # sbot_common.run_script(), sbot_common.start_file()
+    '''
+    Simple executioner for exes/cmds without args, like you double clicked it.
+    Assumes file associations are set to preferences.
+    Supports context and sidebar menus. '''
+    ''' Like you double-clicked it. or.... '''
+    ''' Script runner. Currently only python. Creates a new view with output. '''
+
+    def run(self, paths=None):
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+
+        try:
+            # Determine if it is a supported script type.
+            ext = os.path.splitext(fn)[1]
+            if ext in ['.py']: # list of known script types/execute patterns
+                cmd = '???'
+                if ext == '.py':
+                    cmd = f'python "{path}"'
+                data = subprocess.run(cmd, capture_output=True, text=True)
+                output = data.stdout
+                errors = data.stderr
+                if len(errors) > 0:
+                    output = output + '============ stderr =============\n' + errors
+                create_new_view(self.window, output)
+            else:
+                if platform.system() == 'Darwin':
+                    ret = subprocess.call(('open', path))
+                elif platform.system() == 'Windows':
+                    os.startfile(path)
+                else:  # linux variants
+                    re = subprocess.call(('xdg-open', path))
+        except Exception as e:
+            slog(CAT_ERR, f'{e}')
+
+    def is_visible(self, paths=None):
+        # Ensure file only.
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+        return fn is not None
+
+
+#-----------------------------------------------------------------------------------
+class SbotTerminalCommand(sublime_plugin.WindowCommand):
+    ''' Open term in this directory. Supports context and sidebar menus. '''
+    # SbotUtilsTerminalCommand(sublime_plugin.WindowCommand), SbotSidebarTerminalCommand(sublime_plugin.WindowCommand):
+
+    def run(self, paths=None):
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+
+        cmd = '???'
+        if platform.system() == 'Windows':
+            ver = float(platform.win32_ver()[0])
+            # slog(CAT_INF, ver)
+            cmd = f'wt -d "{dir}"' if ver >= 10 else f'cmd /K "cd {dir}"'
+        else: # mac/linux
+            cmd = f'gnome-terminal --working-directory="{dir}"'
+        subprocess.run(cmd, shell=False, check=False)
+
+
+#-----------------------------------------------------------------------------------
+class SbotCopyNameCommand(sublime_plugin.WindowCommand):
+    ''' Get file or directory name to clipboard. Supports context and sidebar menus. '''
+
+    def run(self, paths=None):
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+        sublime.set_clipboard(os.path.split(path)[-1])
+
+#-----------------------------------------------------------------------------------
+class SbotCopyPathCommand(sublime_plugin.WindowCommand):
+    ''' Get file or directory path to clipboard. Supports context and sidebar menus. '''
+
+    def run(self, paths=None):
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+        sublime.set_clipboard(path)
+
+#-----------------------------------------------------------------------------------
+class SbotCopyFileCommand(sublime_plugin.WindowCommand):
+    ''' Copy selected file to the same dir. Supports context and sidebar menus. '''
+
+    def run(self, paths=None):
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+
+        # Find a valid file name.
+        ok = False
+        root, ext = os.path.splitext(path)
+        for i in range(1, 9):
+            newfn = f'{root}_{i}{ext}'
+            if not os.path.isfile(newfn):
+                shutil.copyfile(path, newfn)
+                ok = True
+                break
+
+        if not ok:
+            sublime.status_message("Couldn't copy file")
+
+    def is_visible(self, paths=None):
+        # Ensure file only.
+        dir, fn, path = _get_path(self.window.active_view(), paths)
+        return fn is not None
