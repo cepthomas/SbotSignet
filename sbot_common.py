@@ -74,7 +74,7 @@ def get_store_fn_for_project(project_fn, file_ext):
 def get_single_caret(view):
     ''' Get current caret position for one only region. If multiples, return None. '''
     if len(view.sel()) == 0:
-        raise RuntimeError('valid??')
+        raise RuntimeError('No data')
     elif len(view.sel()) == 1:  # single sel
         return view.sel()[0].b
     else:  # multi sel
@@ -135,3 +135,33 @@ def get_highlight_info(which='all'):
         for i in range(3):  # magical knowledge
             hl_info.append(HighlightInfo(f'markup.fixed_hl{i + 1}', f'region_fixed_hl{i + 1}', 'fixed'))
     return hl_info
+
+
+#-----------------------------------------------------------------------------------
+def expand_vars(s: str):
+    ''' Smarter version of builtin. Returns expanded string or None if bad var name. '''
+
+    done = False
+    count = 0
+    while not done:
+        if '$' in s:
+            sexp = os.path.expandvars(s)
+            if s == sexp:
+                # Invalid var.
+                s = None
+                done = True
+            else:
+                # Go around again.
+                s = sexp
+        else:
+            # Done expanding.
+            done = True
+
+        # limit iterations
+        if not done:
+            count += 1
+            if count >= 3:
+                done = True
+                s = None
+
+    return s
