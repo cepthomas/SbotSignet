@@ -165,3 +165,23 @@ def expand_vars(s: str):
                 s = None
 
     return s
+
+
+#-----------------------------------------------------------------------------------
+def open_file(fn: str):
+    ''' Open a file like you double-clicked it in the UI. Returns success. '''
+    ok = False
+
+    try:
+        if fn is not None:
+            if platform.system() == 'Darwin':
+                ret = subprocess.call(('open', fn))
+            elif platform.system() == 'Windows':
+                os.startfile(fn)
+            else:  # linux variants
+                ret = subprocess.call(('xdg-open', fn))
+            ok = True
+    except Exception as e:
+        if e is not None:
+            slog(sc.CAT_ERR, e)
+    return ok
