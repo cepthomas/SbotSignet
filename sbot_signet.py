@@ -8,7 +8,7 @@ from . import sbot_common as sc
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
-SIGNET_FILE_EXT = '.sbot-sigs'
+SIGNET_FILE_EXT = '.sigs'
 SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 
 # The current signet collections. This is global across all ST instances/window/project.

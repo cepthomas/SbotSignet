@@ -3,7 +3,7 @@
 Enhanced bookmarks:
 - `Bookmark` and `mark` are already taken so I use `signet` which means in French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
-- Persists per document to sbot-sigs file.
+- Persists per document to `*`.sigs` file.
 - Next/previous (optionally) traverses files in project - like VS.
 - Builtin bookmark key mappings have been stolen:
     - `ctrl+f2`: sbot_toggle_signet
