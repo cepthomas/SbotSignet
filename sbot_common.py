@@ -11,21 +11,17 @@ import sublime_plugin
 
 
 # Odds and ends shared by the plugin family.
+# It is copied from another area during build so any edits will be overwritten.
 
-# print(f'Loading {__file__}')
-
-
-# Internal categories.
-CAT_NON = '---'
+# Standard log categories.
+CAT_DEF = '---'
 CAT_ERR = 'ERR'
 CAT_WRN = 'WRN'
 CAT_INF = 'INF'
 CAT_DBG = 'DBG'
 CAT_TRC = 'TRC'
 
-ALL_CATS = [CAT_NON, CAT_ERR, CAT_WRN, CAT_INF, CAT_DBG, CAT_TRC]
-
-# This is shared across plugins.
+# Data names shared across plugins.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
 # Internal flag.
@@ -41,7 +37,7 @@ def slog(cat: str, message='???'):
     '''
 
     # Check user cat len.
-    cat = (cat + CAT_NON)[:3]
+    cat = (cat + CAT_DEF)[:3]
 
     # Get caller info.
     frame = sys._getframe(1)
@@ -59,6 +55,7 @@ def slog(cat: str, message='???'):
 #-----------------------------------------------------------------------------------
 def get_store_fn(fn):
     ''' General utility to get store simple file name. '''
+
     store_path = os.path.join(sublime.packages_path(), 'User', '.SbotStore')
     pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
     store_fn = os.path.join(store_path, fn)
@@ -68,6 +65,7 @@ def get_store_fn(fn):
 #-----------------------------------------------------------------------------------
 def get_store_fn_for_project(project_fn, file_ext):
     ''' General utility to get store file name based on ST project name. '''
+
     fn = os.path.basename(project_fn).replace('.sublime-project', file_ext)
     store_fn = get_store_fn(fn)
     return store_fn
@@ -76,6 +74,7 @@ def get_store_fn_for_project(project_fn, file_ext):
 #-----------------------------------------------------------------------------------
 def get_single_caret(view):
     ''' Get current caret position for one only region. If multiples, return None. '''
+
     if len(view.sel()) == 0:
         raise RuntimeError('No data')
     elif len(view.sel()) == 1:  # single sel
@@ -86,7 +85,8 @@ def get_single_caret(view):
 
 #-----------------------------------------------------------------------------------
 def get_sel_regions(view, settings):
-    ''' Function to get selections or optionally the whole view if sel_all is True.'''
+    ''' Function to get selections or optionally the whole view if sel_all setting is True.'''
+
     regions = []
     if len(view.sel()[0]) > 0:  # user sel
         regions = view.sel()
@@ -99,10 +99,11 @@ def get_sel_regions(view, settings):
 #-----------------------------------------------------------------------------------
 def create_new_view(window, text, reuse=True):
     ''' Creates or reuse existing temp view with text. Returns the view.'''
+
     view = None
     global _temp_view_id
 
-    # Locate the current temp view. This will gracefully fail if there isn't one.
+    # Locate the current temp view. This will silently fail if there isn't one.
     if reuse:
         for v in window.views():
             if v.id() == _temp_view_id:
@@ -115,6 +116,7 @@ def create_new_view(window, text, reuse=True):
         view.set_scratch(True)
         _temp_view_id = view.id()
 
+    # Create/populate the view.
     view.run_command('select_all')
     view.run_command('cut')
     view.run_command('append', {'characters': text})  # insert has some odd behavior - indentation
@@ -127,6 +129,7 @@ def create_new_view(window, text, reuse=True):
 #-----------------------------------------------------------------------------------
 def wait_load_file(window, fpath, line):
     ''' Open file asynchronously then position at line. Returns the new View or None if failed. '''
+
     vnew = None
 
     def _load(view):
@@ -149,6 +152,7 @@ def wait_load_file(window, fpath, line):
 #-----------------------------------------------------------------------------------
 def get_highlight_info(which='all'):
     ''' Get list of builtin scope names and corresponding region names as list of HighlightInfo. '''
+
     hl_info = []
     if which == 'all' or which == 'user':
         for i in range(6):  # magical knowledge
@@ -191,7 +195,8 @@ def expand_vars(s: str):
 
 #-----------------------------------------------------------------------------------
 def open_file(fn: str):
-    ''' Open a file like you double-clicked it in the UI. Returns success. Let client handle exceptions. '''
+    ''' Open a file like you double-clicked it in the UI. Returns success. Client handles exceptions. '''
+
     ok = False
 
     if fn is not None:
