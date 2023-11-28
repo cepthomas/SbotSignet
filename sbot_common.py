@@ -14,12 +14,12 @@ import sublime_plugin
 # It is copied from another area during build so any edits will be overwritten.
 
 # Standard log categories.
-CAT_DEF = '---'
 CAT_ERR = 'ERR'
 CAT_WRN = 'WRN'
 CAT_INF = 'INF'
 CAT_DBG = 'DBG'
 CAT_TRC = 'TRC'
+ALL_CATS = [CAT_ERR, CAT_WRN, CAT_INF, CAT_DBG, CAT_TRC]
 
 # Data names shared across plugins.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
@@ -36,13 +36,11 @@ def slog(cat: str, message='???'):
     Note that cat should be three chars or less.
     '''
 
-    # Check user cat len.
-    cat = (cat + CAT_DEF)[:3]
-
     # Get caller info.
     frame = sys._getframe(1)
     fn = os.path.basename(frame.f_code.co_filename)
     line = frame.f_lineno
+
     # func = frame.f_code.co_name
     # mod_name = frame.f_globals["__name__"]
     # class_name = frame.f_locals['self'].__class__.__name__
@@ -189,7 +187,6 @@ def expand_vars(s: str):
             if count >= 3:
                 done = True
                 s = None
-
     return s
 
 
