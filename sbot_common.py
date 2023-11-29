@@ -1,13 +1,14 @@
 import sys
 import os
+import platform
+import subprocess
 import pathlib
 import collections
 import sublime
-# import sublime_plugin
 
 
 # Odds and ends shared by the plugin family.
-# It is copied from another area during build so any edits will be overwritten.
+# It is copied from reference source area during build so any edits will be overwritten.
 
 # Standard log categories.
 CAT_ERR = 'ERR'
@@ -217,3 +218,33 @@ def get_path_parts(view, paths):
         path = exp_path
 
     return (dir, fn, path)
+
+
+#-----------------------------------------------------------------------------------
+def open_file(path):
+    ''' Acts as if you had clicked the file in the UI, honors your file associations.'''
+    if platform.system() == 'Darwin':
+        # ret = subprocess.call(('open', path))
+        subprocess.run(('open', path))
+    elif platform.system() == 'Windows':
+        os.startfile(path)
+    else:  # linux variants
+        subprocess.run(('xdg-open', path))
+
+
+#-----------------------------------------------------------------------------------
+def open_terminal(where):
+    ''' Open a terminal where. '''
+
+    # TODO handle desktop options?
+    # Kde -> konsole
+    # GNOME -> gnome-terminal
+    # xfce4 -> xfce4-terminal
+    # Cinnamon -> x-terminal-emulator
+    # MATE -> mate-terminal --window
+    # Unity -> gnome-terminal --profile=Default
+    if platform.system() == 'Windows':
+        cmd = f'wt -d "{where}"'  # W10+
+    else:  # linux + mac(?)
+        cmd = f'gnome-terminal --working-directory="{where}"'
+    subprocess.run(cmd, shell=False, check=False)
