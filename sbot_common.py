@@ -38,6 +38,7 @@ def slog(cat: str, message='???'):
     fn = os.path.basename(frame.f_code.co_filename)
     line = frame.f_lineno
 
+    # Extras:
     # func = frame.f_code.co_name
     # mod_name = frame.f_globals["__name__"]
     # class_name = frame.f_locals['self'].__class__.__name__
@@ -188,9 +189,9 @@ def expand_vars(s: str):
 
 
 #-----------------------------------------------------------------------------------
-def get_path_parts(view, paths):
+def get_path_parts(window, paths):
     '''
-    Slide and dice into useful parts.
+    Slide and dice into useful parts. paths is a list of which only the first is considered.
     Returns (dir, fn, path) where:
     - path is fully expanded path or None if invalid.
     - fn is None for a directory.
@@ -199,18 +200,21 @@ def get_path_parts(view, paths):
     fn = None
     path = None
 
-    if paths is None:  # from view menu
-        # Get the view file.
-        path = view.file_name()
-    elif len(paths) > 0:  # from sidebar
+    view = window.active_view()
+
+    if paths is not None and len(paths) > 0:  # came from sidebar
         # Get the first element of paths.
         path = paths[0]
+    elif view is not None:  # came from view menu
+        # Get the view file.
+        path = view.file_name()
+    else:  # maybe image preview - dig out file name
+        path = window.extract_variables().get('file')
 
     if path is not None:
         exp_path = expand_vars(path)
         # if exp_path is None:
         #     slog(CAT_ERR, f'Bad path:{path}')
-
         if os.path.isdir(exp_path):
             dir = exp_path
         else:
@@ -221,10 +225,9 @@ def get_path_parts(view, paths):
 
 
 #-----------------------------------------------------------------------------------
-def open_file(path):
-    ''' Acts as if you had clicked the file in the UI, honors your file associations.'''
+def open_path(path):
+    ''' Acts as if you had clicked the path in the UI. Honors your file associations.'''
     if platform.system() == 'Darwin':
-        # ret = subprocess.call(('open', path))
         subprocess.run(('open', path))
     elif platform.system() == 'Windows':
         os.startfile(path)
@@ -236,7 +239,7 @@ def open_file(path):
 def open_terminal(where):
     ''' Open a terminal where. '''
 
-    # TODO handle desktop options?
+    # FUTURE handle desktop types?
     # Kde -> konsole
     # GNOME -> gnome-terminal
     # xfce4 -> xfce4-terminal
