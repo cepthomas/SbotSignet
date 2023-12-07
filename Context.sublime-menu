@@ -1,7 +1,6 @@
 [
     { "caption": "-" },
-    {
-        "caption": "Signet",
+    { "caption": "Signet",
         "children":
         [
             { "caption": "Toggle Signet", "command": "sbot_toggle_signet" },
