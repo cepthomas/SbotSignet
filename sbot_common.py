@@ -62,8 +62,10 @@ def get_store_fn(fn):
 def get_store_fn_for_project(project_fn, file_ext):
     ''' General utility to get store file name based on ST project name. '''
 
-    fn = os.path.basename(project_fn).replace('.sublime-project', file_ext)
-    store_fn = get_store_fn(fn)
+    store_fn = None
+    if project_fn is not None:
+        fn = os.path.basename(project_fn).replace('.sublime-project', file_ext)
+        store_fn = get_store_fn(fn)
     return store_fn
 
 
