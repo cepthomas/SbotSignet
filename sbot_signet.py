@@ -1,8 +1,12 @@
 import os
 import json
+import logging
 import sublime
 import sublime_plugin
 from . import sbot_common as sc
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
 
 
 # Definitions.
