@@ -6,7 +6,6 @@ import sublime_plugin
 from . import sbot_common as sc
 
 _logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
 
 
 # Definitions.
@@ -22,11 +21,6 @@ _sigs = {}
 
 
 #-----------------------------------------------------------------------------------
-def plugin_loaded():
-    pass
-
-
-#-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. '''
 
@@ -37,10 +31,12 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
+        global _logger
+        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+        _logger.setLevel(settings.get('log_level'))
+
         if len(views) > 0:
             view = views[0]
-            settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-
             w = view.window()
             if w is not None: # view.window() is None here sometimes.
                 project_fn = w.project_file_name()

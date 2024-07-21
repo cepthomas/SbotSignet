@@ -2,4 +2,7 @@
     // See README.md
     "scope": "keyword",
     "nav_files": true,
+
+    // Log level: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
+    "log_level": "DEBUG",
 }

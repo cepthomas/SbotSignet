@@ -29,3 +29,5 @@ Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
 | :--------            | :-------                             | :------                                                  |
 | scope                | Scope name for gutter icon color     |                                                          |
 | nav_files            | Traverse  extent                     | true all files OR false just current file                |
+    // Log level: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
+    "log_level": "DEBUG",
