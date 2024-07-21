@@ -20,49 +20,55 @@ _logger = None
 # Data type.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
+print(f'!!! package loaded:{__package__}')
 
 #-----------------------------------------------------------------------------------
-def _notify_exception(tp, value, tb):
+def _notify_exception(exc_type, exc_value, exc_traceback):
     ''' Process unhandled exceptions and notify user. '''
 
-    # TODO? gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
-
     global _logger
-    msg = f'Unhandled exception {tp.__name__}: {value}'
-    stb = traceback.format_tb(tb)
+
+    # TODO? sometimes gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
+    if issubclass(exc_type, FileNotFoundError):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    msg = f'Unhandled exception {exc_type.__name__}: {exc_value}'
+    stb = traceback.format_tb(exc_traceback)
     stb.insert(0, msg)
     stb = '\n'.join(stb)
     _logger.error(stb)
     sublime.error_message(msg)
 
+# Connect the last chance hook.
+sys.excepthook = _notify_exception
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
-    ''' Called once per ST instance. Setup anything global. '''
+    ''' Called once per plugin instance. Setup anything global. '''
+    print(f'!!! plugin_loaded():{__package__}')
 
     global _logger
 
-    # Connect the last chance hook.
-    sys.excepthook = _notify_exception
+    # # Connect the last chance hook.
+    # sys.excepthook = _notify_exception
 
     # Set up logging.
     _logger = logging.getLogger(__package__)
-    
     log_fn = get_store_fn('sbot.log')
-    file_size = 50000  # should be user config
 
-    formatter = logging.Formatter("%(asctime)-15s %(levelname)8s: %(name)s: %(message)s")
-    file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=file_size, backupCount=5)
-    file_handler.setFormatter(formatter)
+    file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=50000, backupCount=5) # should be user config
+    file_handler.setFormatter(logging.Formatter('{asctime} {levelname:.3s}: {name} {message}', style='{'))
+    # file_handler.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s: %(name)s: %(message)s"))
+    _logger.addHandler(file_handler)
+    # formatter = logging.Formatter(fmt="[{name}] {levelname}: {message}", style='{')
 
     # For user.
-    stream_handler = logging.StreamHandler()
-    # formatter = logging.Formatter(fmt="[{name}] {levelname}: {message}", style='{')
-    stream_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setFormatter(logging.Formatter(fmt='>>> {levelname:.3s} {name} {message}', style='{'))
+    # stream_handler.setFormatter(logging.Formatter(fmt=">>> %(levelname)s %(name)s %(message)s"))
     stream_handler.setLevel(logging.INFO)
     _logger.addHandler(stream_handler)
-
-    _logger.addHandler(file_handler)
 
     # https://docs.python.org/3/library/logging.handlers.html#streamhandler
     # The StreamHandler class, located in the core logging package, sends logging output to streams such as 
