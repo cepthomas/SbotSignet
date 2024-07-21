@@ -31,7 +31,7 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-        global _logger
+
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
         _logger.setLevel(settings.get('log_level'))
 

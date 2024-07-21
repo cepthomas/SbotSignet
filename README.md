@@ -1,9 +1,8 @@
-# What It Is
+# Sbot Signet
 
 Enhanced bookmarks:
 - `Bookmark` and `mark` are already taken so I use `signet` which means in French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
-- Persists per document to `*`.sigs` file.
 - Next/previous (optionally) traverses files in project - like VS.
 - Builtin bookmark key mappings have been stolen:
     - `ctrl+f2`: sbot_toggle_signet
@@ -13,7 +12,7 @@ Enhanced bookmarks:
 
 Built for ST4 on Windows and Linux.
 
-Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
+Persistence files are in `.../Packages/User/.SbotStore` as `*.sigs`.
 
 
 ## Commands
@@ -25,9 +24,8 @@ Persistence file is in `%data_dir%\Packages\User\.SbotStore`.
 | sbot_clear_all_signets     | Context, Main  | Clear all signets             |                  |
 
 ## Settings
-| Setting              | Description                          | Options                                                  |
-| :--------            | :-------                             | :------                                                  |
-| scope                | Scope name for gutter icon color     |                                                          |
-| nav_files            | Traverse  extent                     | true all files OR false just current file                |
-    // Log level: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
-    "log_level": "DEBUG",
+| Setting              | Description                          | Options                                      |
+| :--------            | :-------                             | :------                                      |
+| scope                | Scope name for gutter icon color     |                                              |
+| nav_files            | Traverse  extent                     | true all files OR false just current file    |
+| log_level            | Min level to log                     | CRITICAL ERROR WARNING INFO DEBUG            |
