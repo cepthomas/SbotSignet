@@ -20,12 +20,11 @@ _logger = None
 # Data type.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
+print(f'>>> loaded sbot_common.py {__package__}')
 
 #-----------------------------------------------------------------------------------
 def _notify_exception(exc_type, exc_value, exc_traceback):
     ''' Process unhandled exceptions and notify user. '''
-
-    global _logger
 
     # Sometimes gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
     if issubclass(exc_type, FileNotFoundError):
@@ -45,23 +44,75 @@ sys.excepthook = _notify_exception
 
 
 #-----------------------------------------------------------------------------------
-def plugin_loaded():
-    ''' Called once per plugin instance. Setup anything global. '''
-
-    # Set up logging. TODO1 does this make too many loggers?
-    _logger = logging.getLogger(__package__)
+def init_log(name):
+    logger = logging.getLogger(name)
     log_fn = get_store_fn('sbot.log')
+
+    print(f'>>> plugin_loaded() {name} {id(_logger)}')
+    # _logger.debug(f'plugin_loaded() {__package__} {id(_logger)}')
+
+    # print(__package__) # SublimeBagOfTricks
+    # print(__name__) # SublimeBagOfTricks.sbot
+
+    # for h in logger.handlers:
+    #     print(f'==={h}')
+    # print(f'==={dir(logging.handlers)}')
+    # print(f'==={dir(logging)}')
+    # print(f'==={dir(logger.handlers)}')
 
     # Main logger.
     file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=50000, backupCount=5)  # should be user config
     file_handler.setFormatter(logging.Formatter('{asctime} {levelname:.3s}: {name} {message}', style='{'))
-    _logger.addHandler(file_handler)
+    logger.addHandler(file_handler)
 
     # For user.
     stream_handler = logging.StreamHandler(stream=sys.stdout)
     stream_handler.setFormatter(logging.Formatter(fmt='>>> {levelname:.3s} {name} {message}', style='{'))
     stream_handler.setLevel(logging.INFO)
-    _logger.addHandler(stream_handler)
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+#-----------------------------------------------------------------------------------
+def deinit_log(logger):
+    if logger is not None:
+        while logger.hasHandlers():
+            logger.removeHandler(logger.handlers[0])
+
+
+
+# #-----------------------------------------------------------------------------------
+# def plugin_loaded():
+#     ''' Called once per plugin instance. Setup anything global. '''
+
+#     # Set up logging. TODO1 does this make too many loggers?
+#     _logger = logging.getLogger(__package__)
+#     log_fn = get_store_fn('sbot.log')
+
+#     # for h in _logger.handlers:
+#     #     print(f'==={h}')
+#     # print(f'==={dir(logging.handlers)}')
+#     # print(f'==={dir(logging)}')
+#     # print(f'==={dir(_logger.handlers)}')
+
+#     # Main logger.
+#     file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=50000, backupCount=5)  # should be user config
+#     file_handler.setFormatter(logging.Formatter('{asctime} {levelname:.3s}: {name} {message}', style='{'))
+#     _logger.addHandler(file_handler)
+
+#     # For user.
+#     stream_handler = logging.StreamHandler(stream=sys.stdout)
+#     stream_handler.setFormatter(logging.Formatter(fmt='>>> {levelname:.3s} {name} {message}', style='{'))
+#     stream_handler.setLevel(logging.INFO)
+#     _logger.addHandler(stream_handler)
+
+#     for h in _logger.handlers:
+#         print(f'==={h}')
+
+
+#     print(f'>>> plugin_loaded() {__package__} {id(_logger)}')
+#     _logger.debug(f'plugin_loaded() {__package__} {id(_logger)}')
 
 
 #-----------------------------------------------------------------------------------
@@ -143,7 +194,6 @@ def create_new_view(window, text, reuse=True):
 def wait_load_file(window, fpath, line):
     ''' Open file asynchronously then position at line. Returns the new View or None if failed. '''
 
-    global _logger
     vnew = None
 
     def _load(view):

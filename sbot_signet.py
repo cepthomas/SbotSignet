@@ -21,6 +21,23 @@ _sigs = {}
 
 
 #-----------------------------------------------------------------------------------
+def plugin_loaded():
+    ''' Called once per plugin instance. '''
+
+    # Set up logging.
+    _logger = sc.init_log(__package__)
+    print(f'>>> plugin_loaded() {__package__} {id(_logger)}')
+
+
+#-----------------------------------------------------------------------------------
+def plugin_unloaded():
+    ''' Called once per plugin instance. '''
+
+    # Clean up logging.
+    sc.deinit_log(_logger)
+
+
+#-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. '''
 
