@@ -27,7 +27,7 @@ def _notify_exception(exc_type, exc_value, exc_traceback):
 
     global _logger
 
-    # TODO? sometimes gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
+    # Sometimes gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
     if issubclass(exc_type, FileNotFoundError):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
@@ -39,19 +39,21 @@ def _notify_exception(exc_type, exc_value, exc_traceback):
     _logger.error(stb)
     sublime.error_message(msg)
 
+
 # Connect the last chance hook.
 sys.excepthook = _notify_exception
+
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     ''' Called once per plugin instance. Setup anything global. '''
 
-    # Set up logging.
+    # Set up logging. TODO1 does this make too many loggers?
     _logger = logging.getLogger(__package__)
     log_fn = get_store_fn('sbot.log')
 
     # Main logger.
-    file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=50000, backupCount=5) # should be user config
+    file_handler = logging.handlers.RotatingFileHandler(log_fn, maxBytes=50000, backupCount=5)  # should be user config
     file_handler.setFormatter(logging.Formatter('{asctime} {levelname:.3s}: {name} {message}', style='{'))
     _logger.addHandler(file_handler)
 

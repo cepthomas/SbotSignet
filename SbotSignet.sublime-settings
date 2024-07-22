@@ -1,8 +1,10 @@
 {
-    // See README.md
+    // Scope name for gutter icon color
     "scope": "keyword",
+
+    // Traverse extent: all files or just current file
     "nav_files": true,
 
-    // Log level: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
-    "log_level": "DEBUG",
+    // Min level to log - CRITICAL ERROR WARNING INFO DEBUG
+    "log_level": "INFO",
 }

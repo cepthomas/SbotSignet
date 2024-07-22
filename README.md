@@ -27,5 +27,5 @@ Persistence files are in `.../Packages/User/.SbotStore` as `*.sigs`.
 | Setting              | Description                          | Options                                      |
 | :--------            | :-------                             | :------                                      |
 | scope                | Scope name for gutter icon color     |                                              |
-| nav_files            | Traverse  extent                     | true all files OR false just current file    |
+| nav_files            | Traverse  extent                     | true=all files or false=just current file    |
 | log_level            | Min level to log                     | CRITICAL ERROR WARNING INFO DEBUG            |
