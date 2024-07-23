@@ -314,7 +314,7 @@ def _write_log(level, message):
     time_str = f'{str(datetime.datetime.now())}'[0:-3]
 
     # Write the record.
-    # TODO I don't think file access needs to be synchronized. ST docs say that API runs on one thread. But?
+    # I don't think file access needs to be synchronized. ST docs say that API runs on one thread. But?
     with open(_log_fn, "a") as log:
         out_line = f'{time_str} {slvl} {fn}:{line} {message}'
         log.write(out_line + '\n')
@@ -350,7 +350,7 @@ def _notify_exception(exc_type, exc_value, exc_traceback):
 
 _log_fn = get_store_fn('sbot.log')
 
-# Connect the last chance hook. TODO should be done once global.
+# Connect the last chance hook. TODO should be done once/global.
 # sys.excepthook = _notify_exception
 
 # Maybe roll over log now.
