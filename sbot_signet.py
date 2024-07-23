@@ -1,12 +1,8 @@
 import os
 import json
-import logging
 import sublime
 import sublime_plugin
 from . import sbot_common as sc
-
-_logger = logging.getLogger(__name__)
-
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
@@ -16,25 +12,19 @@ SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 
 # The current signet collections. This is global across all ST instances/window/project.
 # Key is current window id, value is the collection of file/line signet locations.
-
 _sigs = {}
 
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     ''' Called once per plugin instance. '''
-
-    # Set up logging.
-    _logger = sc.init_log(__package__)
-    print(f'>>> plugin_loaded() {__package__} {id(_logger)}')
+    print(f'>>> plugin_loaded() {__package__}')
 
 
 #-----------------------------------------------------------------------------------
 def plugin_unloaded():
     ''' Called once per plugin instance. '''
-
-    # Clean up logging.
-    sc.deinit_log(_logger)
+    print(f'>>> plugin_unloaded() {__package__}')
 
 
 #-----------------------------------------------------------------------------------
@@ -48,9 +38,8 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        _logger.setLevel(settings.get('log_level'))
+        sc.set_log_level(settings.get('log_level'))
 
         if len(views) > 0:
             view = views[0]
