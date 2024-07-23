@@ -18,13 +18,13 @@ _sigs = {}
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     ''' Called once per plugin instance. '''
-    print(f'>>> plugin_loaded() {__package__}')
+    pass
 
 
 #-----------------------------------------------------------------------------------
 def plugin_unloaded():
     ''' Called once per plugin instance. '''
-    print(f'>>> plugin_unloaded() {__package__}')
+    pass
 
 
 #-----------------------------------------------------------------------------------
@@ -264,8 +264,8 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         incr = +1 if next else -1
         array_end = 0 if next else -1
 
-        # 1) next: If there's another bookmark below >>> goto it
-        # 1) prev: If there's another bookmark above >>> goto it
+        # 1) next: If there's another bookmark below -> goto it
+        # 1) prev: If there's another bookmark above -> goto it
         if not done:
             sig_rows = _get_view_signet_rows(view)
             if not next:
@@ -281,8 +281,8 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                 view.run_command("goto_line", {"line": sig_rows[0] + 1})
                 done = True
 
-        # 2) next: Else if there's an open signet file to the right of this tab >>> focus tab, goto first signet
-        # 2) prev: Else if there's an open signet file to the left of this tab >>> focus tab, goto last signet
+        # 2) next: Else if there's an open signet file to the right of this tab -> focus tab, goto first signet
+        # 2) prev: Else if there's an open signet file to the left of this tab -> focus tab, goto last signet
         if not done:
             view_index = window.get_view_index(view)[1] + incr
             while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
@@ -295,8 +295,8 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                 else:
                     view_index += incr
 
-        # 3) next: Else if there is a signet file in the project that is not open >>> open it, focus tab, goto first signet
-        # 3) prev: Else if there is a signet file in the project that is not open >>> open it, focus tab, goto last signet
+        # 3) next: Else if there is a signet file in the project that is not open -> open it, focus tab, goto first signet
+        # 3) prev: Else if there is a signet file in the project that is not open -> open it, focus tab, goto last signet
         if not done:
             winid = window.id()
 
@@ -311,8 +311,8 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                         done = True
                         break
 
-        # 4) next: Else >>> find first tab/file with signets, focus tab, goto first signet
-        # 4) prev: Else >>> find last tab/file with signets, focus tab, goto last signet
+        # 4) next: Else -> find first tab/file with signets, focus tab, goto first signet
+        # 4) prev: Else -> find last tab/file with signets, focus tab, goto last signet
         if not done:
             view_index = 0 if next else len(window.views()) - 1
             while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
