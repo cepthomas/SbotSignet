@@ -79,7 +79,6 @@ class SignetEvent(sublime_plugin.EventListener):
 
     def _init_view(self, view):
         ''' Lazy init. '''
-        # global _sigs
         fn = view.file_name()
         if view.is_scratch() is False and fn is not None:
             # Init the view if not already.
@@ -106,8 +105,6 @@ class SignetEvent(sublime_plugin.EventListener):
 
     def _open_sigs(self, window):
         ''' General project opener. '''
-        # global _sigs
-
         winid = window.id()
         # project_fn = window.project_file_name()
 
@@ -125,8 +122,6 @@ class SignetEvent(sublime_plugin.EventListener):
 
     def _save_sigs(self, window):
         ''' General project saver. '''
-        # global _sigs
-
         if self._store_fn is not None:
             winid = window.id()
 
@@ -192,8 +187,6 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
         return self.view.is_scratch() is False and self.view.file_name() is not None
 
     def run(self, edit):
-        # global _sigs
-
         # Get current row.
         caret = sc.get_single_caret(self.view)
         if caret is None:
@@ -331,8 +324,6 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
     ''' Clear all signets. '''
 
     def run(self, edit):
-        # global _sigs
-
         # Clear collection for current window only.
         winid = self.view.window().id()
         if winid in _sigs:
