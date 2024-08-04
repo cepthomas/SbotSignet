@@ -28,8 +28,7 @@ LL_ERROR = 0
 LL_WARN = 1
 LL_INFO = 2
 LL_DEBUG = 3
-LL_TRACE = 4
-_level_to_name = {LL_ERROR:'ERR', LL_WARN:'WRN', LL_INFO:'INF', LL_DEBUG:'DBG', LL_TRACE:'TRC'}
+_level_to_name = {LL_ERROR:'ERR', LL_WARN:'WRN', LL_INFO:'INF', LL_DEBUG:'DBG'}
 _name_to_level = {v: k for k, v in _level_to_name.items()}
 _log_level = LL_INFO
 _tell_level = LL_INFO
@@ -56,10 +55,6 @@ def log_info(message):
 def log_debug(message):
     ''' Convenience function.'''
     _write_log(LL_DEBUG, message)
-
-def log_trace(message):
-    ''' Convenience function.'''
-    _write_log(LL_TRACE, message)
 
 def set_log_level(level):
     ''' Set current log level.'''
@@ -303,7 +298,7 @@ def _write_log(level, message):
         return
 
     # Get caller info.
-    frame = sys._getframe(2)  # (1)
+    frame = sys._getframe(2)
     fn = os.path.basename(frame.f_code.co_filename)
     line = frame.f_lineno
     # f'func = {frame.f_code.co_name}'
