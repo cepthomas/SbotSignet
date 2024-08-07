@@ -1,16 +1,12 @@
+import sys
+import os
+import traceback
+import platform
 import collections
 import datetime
-import functools
-import inspect
-import os
 import pathlib
-import platform
 import shutil
 import subprocess
-import sys
-import threading
-import time
-import traceback
 import sublime
 
 
@@ -18,17 +14,11 @@ import sublime
 
 
 #-----------------------------------------------------------------------------------
-#---------------------------- Public defs ------------------------------------------
+#---------------------------- Public types -----------------------------------------
 #-----------------------------------------------------------------------------------
 
 # Data type.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
-
-# Log defs.
-LL_ERROR = 0
-LL_WARN = 1
-LL_INFO = 2
-LL_DEBUG = 3
 
 
 #-----------------------------------------------------------------------------------
@@ -38,115 +28,27 @@ LL_DEBUG = 3
 # Internal flag.
 _temp_view_id = None
 
-# Log defs.
-_LOG_FILE_NAME = 'sbot.log'
-_level_to_name = {LL_ERROR:'ERR', LL_WARN:'WRN', LL_INFO:'INF', LL_DEBUG:'DBG'}
-_name_to_level = {v: k for k, v in _level_to_name.items()}
-_log_level = LL_INFO
-_tell_level = LL_INFO
+# Log stuff.
 _log_fn = None
-
-# Trace defs.
-_ftrace = None
-_trace_start_time = 0
+_log_levels = ['ERR', 'INF', 'DBG']
+_log_level = 2  # TODO need a flag to log debug for release?
 
 
 #-----------------------------------------------------------------------------------
 #---------------------------- Public logger functions ------------------------------
 #-----------------------------------------------------------------------------------
 
-def log_error(message):
+def log_error(message, tb=None):
     '''Convenience function.'''
-    _write_log(LL_ERROR, message)
-
-def log_warn(message):
-    '''Convenience function.'''
-    _write_log(LL_WARN, message)
+    _write_log(0, message, tb)
 
 def log_info(message):
     '''Convenience function.'''
-    _write_log(LL_INFO, message)
+    _write_log(1, message)
 
 def log_debug(message):
     '''Convenience function.'''
-    _write_log(LL_DEBUG, message)
-
-def set_log_level(level):
-    '''Set current log level.'''
-    _log_level = _convert_log_level(level)
-
-def set_tell_level(level):
-    '''Set level to send to stdout.'''
-    _tell_level = _convert_log_level(level)
-
-
-#-----------------------------------------------------------------------------------
-#---------------------------- Public trace functions -------------------------------
-#-----------------------------------------------------------------------------------
-
-#---------------------------------------------------------------------------
-def start_trace(name, clean_file=True):
-    '''Enables tracing and optionally clean file (default is True).'''
-    global _ftrace
-    global _trace_start_time
-
-    trace_fn = get_store_fn(f'sbot_trace_{name}.log')
-
-    if clean_file:
-        with open(trace_fn, 'w'):
-            pass
-
-    # Open file now. Doing it on every write is too expensive.
-    _ftrace = open(trace_fn, 'a')
-    _trace_start_time = _get_ns()
-
-
-#---------------------------------------------------------------------------
-def stop_trace(clean_file=True): 
-    '''Stop tracing.'''
-    global _ftrace
-
-    if _ftrace is not None:
-        _ftrace.flush()
-        _ftrace.close()
-        _ftrace = None
-
-
-#---------------------------------------------------------------------------
-def T(msg):
-    '''Trace function for user code.'''
-    if _ftrace is not None:
-        _trace(msg, 2)
-
-
-#---------------------------------------------------------------------------
-def traced_function(f):
-    '''Decorator to support function entry/exit tracing.'''
-    # Check for enabled.
-    # if _ftrace is None:
-    #     return f
-
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        parts = [f'{f.__name__}(enter)']
-        if len(args) > 0:
-            parts.append(f'args:{args}')
-        if len(kwargs) > 0:
-            parts.append(f'kwargs:{kwargs}')
-        _trace(' '.join(parts))
-
-        stat = 0
-        res = None
-        try:
-            res = f(*args, **kwargs)
-        except Exception as e:
-            # _trace(e)
-            _trace(traceback.format_exc())
-            stat = 1
-
-        _trace(f'{f.__name__}(exit) stat:{stat} res:{res} type:{type(res)}')
-        return (stat, res)
-    return wrapper
+    _write_log(2, message)
 
 
 #-----------------------------------------------------------------------------------
@@ -239,7 +141,7 @@ def wait_load_file(window, fpath, line):
         vnew = window.open_file(fpath)
         _load(vnew)
     except Exception as e:
-        sc.log_error(f'Failed to open {fpath}: {e}')
+        log_error(f'Failed to open {fpath}: {e}', e.__traceback__)
         vnew = None
 
     return vnew
@@ -356,22 +258,9 @@ def open_terminal(where):
 #---------------------------- Private functions ------------------------------------
 #-----------------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------------
-def _convert_log_level(level):
-    '''Convert arg (str or int) into a valid log level.'''
-    new_level = -1
-    if type(level) is int:
-        new_level = level
-    elif type(level) is str:
-        if level in _name_to_level:
-            new_level = _name_to_level[level]
-    if new_level not in _level_to_name:
-        raise ValueError(f'Invalid log level: {level}')
-    return new_level
-
 
 #-----------------------------------------------------------------------------------
-def _write_log(level, message):
+def _write_log(level, message, tb=None):
     '''Format a standard message with caller info and log it.'''
     # Gates. Sometimes get stray empty lines.
     if len(message) == 0:
@@ -389,56 +278,23 @@ def _write_log(level, message):
     # f'mod_name = {frame.f_globals["__name__"]}'
     # f'class_name = {frame.f_locals["self"].__class__.__name__}'
 
-    slvl = _level_to_name[level] if level in _level_to_name else '???'
+    slvl = _log_levels[level] if level < len(_log_levels) else '???'
     time_str = f'{str(datetime.datetime.now())}'[0:-3]
 
-    # Write the record.
-    # I don't think file access needs to be synchronized. ST docs say that API runs on one thread. But?
+    # Write the record. No need to be synchronized across multiple sbot pugins
+    # as ST docs say that API runs on a single thread.
     with open(_log_fn, 'a') as log:
         out_line = f'{time_str} {slvl} {fn}:{line} {message}'
         log.write(out_line + '\n')
+        if tb is not None:
+            stb = '\n'.join(traceback.format_tb(tb))
+            log.write(stb)
         log.flush()
 
-    # Write to console also?
-    if level <= _tell_level:
-        out_line = f'>>> {slvl} {fn}:{line} {message}'
-        sys.stdout.write(out_line + '\n')
-        sys.stdout.flush()
-
-
-#---------------------------------------------------------------------------
-def _get_ns():
-    '''Get current nanosecond.'''
-    if platform.system() == 'Darwin':
-        log_error('Sorry, we don\'t do Macs')
-    elif platform.system() == 'Windows':
-        return time.perf_counter_ns()
-    else:  # linux variants
-        return time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-
-#---------------------------------------------------------------------------
-def _trace(msg, stkpos=None):
-    '''Do one trace record. if stkpos not None determine the function/line info too.'''
-    elapsed = _get_ns() - _trace_start_time
-    msec = elapsed // 1000000
-    usec = elapsed // 1000
-
-    if stkpos is not None:
-        frame = sys._getframe(stkpos)
-        if 'self' in frame.f_locals:
-            class_name = frame.f_locals['self'].__class__.__name__
-            func = f'{class_name}.{frame.f_code.co_name}'
-        else:
-            func = frame.f_code.co_name  # could be '<module>'
-        s = f'{msec:04}.{usec:03} {func}({frame.f_lineno}) {msg}\n'
-    else:
-        s = f'{msec:04}.{usec:03} {msg}\n'
-
-    print(s)        
-
-    # Write the record. TODO1 if file is locked by other process notify user that trace is one module only.
-    _ftrace.write(s)
+    # Write to console also?  INF and ERR only.
+    if level <= 1:
+        out_line = f'SBOT {slvl} {fn}:{line} {message}'
+        print(out_line)
 
 
 #-----------------------------------------------------------------------------------
@@ -446,26 +302,24 @@ def _notify_exception(exc_type, exc_value, exc_traceback):
     '''Process unhandled exceptions and notify user.'''
 
     # Sometimes gets this on shutdown: FileNotFoundError '...Log\plugin_host-3.8-on_exit.log'
-    if issubclass(exc_type, FileNotFoundError):
+    if issubclass(exc_type, FileNotFoundError) and 'plugin_host-3.8-on_exit.log' in str(exc_value):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
     msg = f'Unhandled exception {exc_type.__name__}: {exc_value}'
-    stb = traceback.format_tb(exc_traceback)
-    stb.insert(0, msg)
-    stb = '\n'.join(stb)
-    log_error(stb)
-    sublime.error_message(msg)
+    log_error(msg, exc_traceback)
+    sublime.error_message(msg) # This goes to console too.
 
 
 #-----------------------------------------------------------------------------------
 #----------------------- Finish initialization -------------------------------------
 #-----------------------------------------------------------------------------------
 
-_log_fn = get_store_fn(_LOG_FILE_NAME)
+# Connect the last chance hook.
+# This should really be done only once rather than each plugin but *should* be ok.
+sys.excepthook = _notify_exception
 
-# Connect the last chance hook. TODO should be done once/global.
-# sys.excepthook = _notify_exception
+_log_fn = get_store_fn('sbot.log')
 
 # Maybe roll over log now.
 if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:

@@ -39,7 +39,6 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        sc.set_log_level(settings.get('log_level'))
 
         if len(views) > 0:
             view = views[0]
