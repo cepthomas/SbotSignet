@@ -2,7 +2,13 @@ import os
 import json
 import sublime
 import sublime_plugin
-from . import sbot_common as sc
+from .SbotCommon import utils as sc
+from .SbotCommon.logger import *
+from .SbotCommon.tracer import *
+
+ # Initialize logging.
+log_init(sc.get_store_fn('sbot.log'))
+
 
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
@@ -17,13 +23,13 @@ _sigs = {}
 
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
-    ''' Called once per plugin instance. '''
-    pass
+    '''Called per plugin instance.'''
+    log_info(f'Loading {__package__} with python {platform.python_version()} on {platform.platform()}')
 
 
 #-----------------------------------------------------------------------------------
 def plugin_unloaded():
-    ''' Called once per plugin instance. '''
+    '''Ditto.'''
     pass
 
 
