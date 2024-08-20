@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import sublime
 
-# print(f'>>> (re)load {__name__}')
 
 # Note: This file is copied from SublimeBagOfTricks. Any edits will be overwritten.
 
