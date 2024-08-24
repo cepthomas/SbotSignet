@@ -20,6 +20,10 @@ import sublime
 # Data type.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
+LL_ERROR = 0
+LL_INFO = 1
+LL_DEBUG = 2
+
 
 #-----------------------------------------------------------------------------------
 #---------------------------- Private fields ---------------------------------------
@@ -28,9 +32,11 @@ HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name
 # Internal flag.
 _temp_view_id = None
 
+# Logger stuff.
 _log_fn = None
-_log_levels = ['ERR', 'INF', 'DBG']
-_log_level = 2
+
+# Debug or not. Tracing? Other stuff?
+_mode = os.environ.get('SBOT_MODE', 0)
 
 
 #-----------------------------------------------------------------------------------
@@ -39,20 +45,21 @@ _log_level = 2
 
 #-----------------------------------------------------------------------------------
 def error(message, tb=None):
-    '''Convenience function.'''
-    write_log(0, message, tb)
+    '''Logger function.'''
+    _write_log(LL_ERROR, message, tb)
 
 
 #-----------------------------------------------------------------------------------
 def info(message):
-    '''Convenience function.'''
-    write_log(1, message)
+    '''Logger function.'''
+    _write_log(LL_INFO, message)
 
 
 #-----------------------------------------------------------------------------------
 def debug(message):
-    '''Convenience function.'''
-    write_log(2, message)
+    '''Logger function.'''
+    if _mode > 0:
+        _write_log(LL_DEBUG, message)
 
 
 #-----------------------------------------------------------------------------------
@@ -255,7 +262,11 @@ def open_terminal(where):
 
 
 #-----------------------------------------------------------------------------------
-def write_log(level, message, tb=None):
+#---------------------------- Private functions ------------------------------------
+#-----------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------
+def _write_log(level, message, tb=None):
     '''Format a standard message with caller info and log it.'''
 
     if _log_fn is None:
@@ -266,8 +277,6 @@ def write_log(level, message, tb=None):
         return
     if len(message) == 1 and message[0] == '\n':
         return
-    if level > _log_level:
-        return
 
     # Get caller info.
     frame = sys._getframe(2)
@@ -277,7 +286,14 @@ def write_log(level, message, tb=None):
     # f'mod_name = {frame.f_globals["__name__"]}'
     # f'class_name = {frame.f_locals["self"].__class__.__name__}'
 
-    slvl = _log_levels[level] if level < len(_log_levels) else '???'
+    slvl = '???'
+    if level == LL_ERROR:
+        slvl = 'ERR'
+    elif level == LL_INFO:
+        slvl = 'INF'
+    elif level == LL_DEBUG:
+        slvl = 'DBG'
+
     time_str = f'{str(datetime.datetime.now())}'[0:-3]
 
     # Write the record. No need to be synchronized across multiple sbot plugins
@@ -295,11 +311,6 @@ def write_log(level, message, tb=None):
             log.write(stb + '\n')
         log.flush()
 
-    # # Write to console also?  INF and ERR only.
-    # if level <= 1:
-    #     out_line = f'>>> {slvl} {fn}:{line} {message}'
-    #     print(out_line)
-
 
 #-----------------------------------------------------------------------------------
 #----------------------- Finish initialization -------------------------------------
@@ -314,4 +325,3 @@ if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
     # Clear current log file.
     with open(_log_fn, 'w'):
         pass
-
