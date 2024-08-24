@@ -35,8 +35,8 @@ _temp_view_id = None
 # Logger stuff.
 _log_fn = None
 
-# Debug or not. Tracing? Other stuff?
-_mode = os.environ.get('SBOT_MODE', 0)
+# Debug or not.
+_mode = int(os.environ.get('SBOT_MODE', 0))
 
 
 #-----------------------------------------------------------------------------------
