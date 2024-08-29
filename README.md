@@ -1,4 +1,4 @@
-# SbotSignet
+# Signet Bookmarks
 
 Enhanced bookmarks:
 - `Bookmark` and `mark` are already taken so I use `signet` which means in French:
@@ -67,7 +67,7 @@ because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file
 
 
 ## Settings
-| Setting              | Description                          | Options                                      |
-| :--------            | :-------                             | :------                                      |
-| scope                | Scope name for gutter icon color     |                                              |
-| nav_files            | Traverse  extent                     | true=all files or false=just current file    |
+| Setting       | Description                          | Options                                      |
+| :--------     | :-------                             | :------                                      |
+| scope         | Scope name for gutter icon color     |                                              |
+| nav_files     | Traverse  extent                     | true=all files OR false=just current file    |
