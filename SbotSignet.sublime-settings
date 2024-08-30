@@ -1,7 +1,7 @@
 {
-    // Scope name for gutter icon color
+    // Scope name for gutter icon color.
     "scope": "keyword",
 
-    // Traverse extent: all files or just current file
-    "nav_files": true,
+    // Traverse extent: all project files or just current file.
+    "nav_all_files": true,
 }

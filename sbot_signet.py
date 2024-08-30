@@ -245,7 +245,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
             return  # --- early return
 
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        nav_files = settings.get('nav_files')
+        nav_all_files = settings.get('nav_all_files')
 
         done = False
 
@@ -270,7 +270,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                     break
 
             # At begin or end. Check for single file operation.
-            if not done and not nav_files and len(sig_rows) > 0:
+            if not done and not nav_all_files and len(sig_rows) > 0:
                 view.run_command("goto_line", {"line": sig_rows[0] + 1})
                 done = True
 

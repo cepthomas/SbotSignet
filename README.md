@@ -10,7 +10,8 @@ Built for ST4 on Windows and Linux.
 Persistence files are in `.../Packages/User/.SbotStore` as `*.sigs`.
 
 
-## Commands
+## Commands and Menus
+
 | Command                    | Description                   | Args             |
 | :--------                  | :-------                      | :--------        |
 | sbot_toggle_signet         | Toggle signet at row          |                  |
@@ -33,7 +34,7 @@ Add the commands you like to your own `User\Context.sublime-menu` file. Typical 
 }
 ```
 
-Or they could go in your `User\Main.sublime-menu` file.
+Or they could go in your `User\Main.sublime-menu` file under `Goto`.
 
 ``` json
 {
@@ -56,7 +57,7 @@ Or they could go in your `User\Main.sublime-menu` file.
 ```    
 
 You may find it useful to replace the builtin bookmark key bindings with the new ones
-because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file (or Linux).
+because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file (or Linux):
 
 ``` json
 { "keys": ["ctrl+f2"], "command": "sbot_toggle_signet" },
@@ -67,7 +68,7 @@ because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file
 
 
 ## Settings
-| Setting       | Description                          | Options                                      |
-| :--------     | :-------                             | :------                                      |
-| scope         | Scope name for gutter icon color     |                                              |
-| nav_files     | Traverse  extent                     | true=all files OR false=just current file    |
+| Setting       | Description                          | Options                                              |
+| :--------     | :-------                             | :------                                              |
+| scope         | Scope name for gutter icon color     |                                                      |
+| nav_all_files | Traverse  extent                     | true=all project files OR false=just current file    |
