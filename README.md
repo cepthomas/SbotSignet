@@ -1,13 +1,16 @@
 # Signet Bookmarks
 
-Enhanced bookmarks:
-- `Bookmark` and `mark` are already taken so I use `signet` which means in French:
+Sublime Text plugin for enhanced bookmarks. `Bookmark` and `Mark` are already well used so
+this is `signet` from the French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
-- Next/previous (optionally) traverses files in project - like VS.
 
 Built for ST4 on Windows and Linux.
 
-Persistence files are in `.../Packages/User/.SbotStore` as `*.sigs`.
+
+## Features
+
+- Persisted per project to `...\Packages\User\.SbotStore\<project>.sigs`.
+- Next/previous traverses just the current file or all files in project.
 
 
 ## Commands and Menus
@@ -68,7 +71,7 @@ because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file
 
 
 ## Settings
-| Setting       | Description                          | Options                                              |
-| :--------     | :-------                             | :------                                              |
-| scope         | Scope name for gutter icon color     |                                                      |
-| nav_all_files | Traverse  extent                     | true=all project files OR false=just current file    |
+| Setting       | Description                 | Options                                              |
+| :--------     | :-------                    | :------                                              |
+| scope         | Scope name for gutter icon  |                                                      |
+| nav_all_files | Traverse extent             | true=all project files OR false=just current file    |
