@@ -10,7 +10,7 @@ import subprocess
 import sublime
 
 
-# Note: This file is copied from SublimeBagOfTricks. Any edits will be overwritten.
+# Note: This file is copied from SbotDev. Any edits will be overwritten.
 
 
 #-----------------------------------------------------------------------------------
