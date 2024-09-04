@@ -43,16 +43,26 @@ _mode = int(os.environ.get('SBOT_MODE', 0))
 #---------------------------- Public functions -------------------------------------
 #-----------------------------------------------------------------------------------
 
+
 #-----------------------------------------------------------------------------------
 def error(message, tb=None):
     '''Logger function.'''
     _write_log(LL_ERROR, message, tb)
+
+    # Show the user some context info.
+    info = [message]
+    if tb is not None:
+        frame = traceback.extract_tb(tb)[-1]
+        info.append(f'at {frame.name}({frame.lineno})')
+        info.append(f'See the log for detail')
+    sublime.error_message('\n'.join(info))  # This goes to console too.
 
 
 #-----------------------------------------------------------------------------------
 def info(message):
     '''Logger function.'''
     _write_log(LL_INFO, message)
+    sublime.status_message(message)
 
 
 #-----------------------------------------------------------------------------------
