@@ -54,7 +54,7 @@ def error(message, tb=None):
     if tb is not None:
         frame = traceback.extract_tb(tb)[-1]
         info.append(f'at {frame.name}({frame.lineno})')
-        info.append(f'See the log for detail')
+        info.append('See the log for detail')
     sublime.error_message('\n'.join(info))  # This goes to console too.
 
 
@@ -158,7 +158,7 @@ def wait_load_file(window, fpath, line):
         vnew = window.open_file(fpath)
         _load(vnew)
     except Exception as e:
-        log.error(f'Failed to open {fpath}: {e}', e.__traceback__)
+        error(f'Failed to open {fpath}: {e}', e.__traceback__)
         vnew = None
 
     return vnew
@@ -243,7 +243,7 @@ def get_path_parts(window, paths):
 def open_path(path):
     '''Acts as if you had clicked the path in the UI. Honors your file associations.'''
     if platform.system() == 'Darwin':
-        log.error('Sorry, we don\'t do Macs')
+        error('Sorry, we don\'t do Macs')
     elif platform.system() == 'Windows':
         os.startfile(path)
     else:  # linux variants
@@ -263,7 +263,7 @@ def open_terminal(where):
     # Unity -> gnome-terminal --profile=Default
 
     if platform.system() == 'Darwin':
-        log.error('Sorry, we don\'t do Macs')
+        error('Sorry, we don\'t do Macs')
     elif platform.system() == 'Windows':
         cmd = f'wt -d "{where}"'  # W10+
     else:  # linux
@@ -297,12 +297,9 @@ def _write_log(level, message, tb=None):
     # f'class_name = {frame.f_locals["self"].__class__.__name__}'
 
     slvl = '???'
-    if level == LL_ERROR:
-        slvl = 'ERR'
-    elif level == LL_INFO:
-        slvl = 'INF'
-    elif level == LL_DEBUG:
-        slvl = 'DBG'
+    if level == LL_ERROR: slvl = 'ERR'
+    elif level == LL_INFO: slvl = 'INF'
+    elif level == LL_DEBUG: slvl = 'DBG'
 
     time_str = f'{str(datetime.datetime.now())}'[0:-3]
 
@@ -314,9 +311,9 @@ def _write_log(level, message, tb=None):
         if tb is not None:
             # The traceback formatter is a bit ugly - clean it up.
             tblines = []
-            for l in traceback.format_tb(tb):
-                if len(l) > 0:
-                    tblines.append(l[:-1])
+            for s in traceback.format_tb(tb):
+                if len(s) > 0:
+                    tblines.append(s[:-1])
             stb = '\n'.join(tblines)
             log.write(stb + '\n')
         log.flush()
