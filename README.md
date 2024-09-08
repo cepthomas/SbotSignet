@@ -4,7 +4,7 @@ Sublime Text plugin for enhanced bookmarks. `Bookmark` and `Mark` are already we
 this is `signet` from the French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
 
-Built for ST4 on Windows and Linux.
+Built for ST4 on Windows and Linux (lightly tested).
 
 
 ## Features
@@ -75,3 +75,7 @@ because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file
 | :--------     | :-------                    | :------                                              |
 | scope         | Scope name for gutter icon  |                                                      |
 | nav_all_files | Traverse extent             | true=all project files OR false=just current file    |
+
+## Notes
+
+- Log file is in $APPDATA\Sublime Text\Packages\User\.SbotStore\sbot.log.
