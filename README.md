@@ -60,7 +60,7 @@ Or they could go in your `User\Main.sublime-menu` file under `Goto`.
 ```    
 
 You may find it useful to replace the builtin bookmark key bindings with the new ones
-because you shouldn't need both. In `User\Default (Windows).sublime-keymap` file (or Linux):
+because you shouldn't need both. In `User\Default (Windows or Linux).sublime-keymap` file:
 
 ``` json
 { "keys": ["ctrl+f2"], "command": "sbot_toggle_signet" },

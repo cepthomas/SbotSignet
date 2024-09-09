@@ -1,0 +1,4 @@
+[
+    { "caption": "Signet Bookmarks: Clear All", "command": "sbot_clear_all_signets" },
+    { "caption": "Signet Bookmarks: Edit Settings", "command": "edit_settings", "args": { "base_file": "${packages}/SbotSignet/SbotSignet.sublime-settings", "default": "{\n$0\n}\n" } }
+]
