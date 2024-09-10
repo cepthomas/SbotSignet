@@ -78,4 +78,6 @@ because you shouldn't need both. In `User\Default (Windows or Linux).sublime-key
 
 ## Notes
 
-- Log file is in $APPDATA\Sublime Text\Packages\User\.SbotStore\sbot.log.
+- `sbot_common.py` contains miscellaneous common components primarily for internal use by the sbot family.
+  This includes a very simple logger primarily for user-facing information, syntax errors and the like.
+  Log file is in $APPDATA\Sublime Text\Packages\User\.SbotStore\sbot.log.
