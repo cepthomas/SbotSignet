@@ -226,7 +226,7 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
             regions.append(sublime.Region(pt, pt))
 
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        self.view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
+        self.view.add_regions(SIGNET_REGION_NAME, regions, str(settings.get('scope')), SIGNET_ICON)
 
 
 #-----------------------------------------------------------------------------------
