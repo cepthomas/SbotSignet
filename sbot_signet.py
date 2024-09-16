@@ -39,8 +39,6 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-
         if len(views) > 0:
             view = views[0]
             w = view.window()
@@ -73,9 +71,6 @@ class SignetEvent(sublime_plugin.EventListener):
     def on_deactivated(self, view):
         # Window is still valid here.
         self._collect_sigs(view)
-
-    def on_close(self, view):
-        pass
 
     def _init_view(self, view):
         ''' Lazy init. '''
@@ -169,7 +164,7 @@ class SignetEvent(sublime_plugin.EventListener):
                 else:
                     win_sigs[fn] = []
                 for reg in regions:
-                    row, col = view.rowcol(reg.a)
+                    row, _ = view.rowcol(reg.a)
                     win_sigs[fn].append(row + 1)
             else:
                 try:
@@ -187,6 +182,7 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
         return self.view.is_scratch() is False and self.view.file_name() is not None
 
     def run(self, edit):
+        del edit
         # Get current row.
         caret = sc.get_single_caret(self.view)
         if caret is None:
@@ -206,13 +202,15 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
 
         # Update collection.
         crows = None  # Default
-        winid = self.view.window().id()
-        fn = self.view.file_name()
+        win = self.view.window()
+        if win is not None:
+            winid = win.id()
+            fn = self.view.file_name()
 
-        if winid in _sigs:
-            if fn not in _sigs[winid]:
-                # Add a new one.
-                _sigs[winid][fn] = []
+            if winid in _sigs:
+                if fn not in _sigs[winid]:
+                    # Add a new one.
+                    _sigs[winid][fn] = []
 
         if crows is not None:
             crows.clear()
@@ -234,12 +232,16 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
     ''' Navigate to next/prev signet in whole collection. '''
 
     def run(self, edit, where):
-        ''' Common navigate to signet in whole collection. '''
+        # Common navigate to signet in whole collection.
+        del edit
         next = where == 'next'
 
         view = self.view
-        window = view.window()
-        winid = window.id()
+        win = view.window()
+        if win is None:
+            return  # --- early return
+
+        winid = win.id()
 
         if winid not in _sigs:
             return  # --- early return
@@ -277,12 +279,12 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         # 2) next: Else if there's an open signet file to the right of this tab -> focus tab, goto first signet
         # 2) prev: Else if there's an open signet file to the left of this tab -> focus tab, goto last signet
         if not done:
-            view_index = window.get_view_index(view)[1] + incr
-            while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
-                vv = window.views()[view_index]
+            view_index = win.get_view_index(view)[1] + incr
+            while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
+                vv = win.views()[view_index]
                 sig_rows = _get_view_signet_rows(vv)
                 if len(sig_rows) > 0:
-                    window.focus_view(vv)
+                    win.focus_view(vv)
                     vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
                     done = True
                 else:
@@ -291,12 +293,12 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         # 3) next: Else if there is a signet file in the project that is not open -> open it, focus tab, goto first signet
         # 3) prev: Else if there is a signet file in the project that is not open -> open it, focus tab, goto last signet
         if not done:
-            winid = window.id()
+            winid = win.id()
 
             for fn, rows in _sigs[winid].items():
                 if fn is not None:
-                    if window.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
-                        vv = sc.wait_load_file(window, fn, rows[array_end])
+                    if win.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
+                        vv = sc.wait_load_file(win, fn, rows[array_end])
                         # vv = window.open_file(fn)
                         # endrow = rows[array_end]
                         # sublime.set_timeout(lambda r=endrow: wait_load_file(vv, r), 10)  # already 1-based in file
@@ -307,12 +309,12 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         # 4) next: Else -> find first tab/file with signets, focus tab, goto first signet
         # 4) prev: Else -> find last tab/file with signets, focus tab, goto last signet
         if not done:
-            view_index = 0 if next else len(window.views()) - 1
-            while not done and ((next and view_index < len(window.views()) or (not next and view_index >= 0))):
-                vv = window.views()[view_index]
+            view_index = 0 if next else len(win.views()) - 1
+            while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
+                vv = win.views()[view_index]
                 sig_rows = _get_view_signet_rows(vv)
                 if len(sig_rows) > 0:
-                    window.focus_view(vv)
+                    win.focus_view(vv)
                     vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
                     done = True
                 else:
@@ -325,13 +327,18 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
 
     def run(self, edit):
         # Clear collection for current window only.
-        winid = self.view.window().id()
-        if winid in _sigs:
-            _sigs[winid] = {}
+        del edit
 
-        # Clear visuals in open views.
-        for vv in self.view.window().views():
-            vv.erase_regions(SIGNET_REGION_NAME)
+        win = self.view.window()
+        if win is not None:
+            winid = win.id()
+
+            if winid in _sigs:
+                _sigs[winid] = {}
+
+            # Clear visuals in open views.
+            for vv in win.views():
+                vv.erase_regions(SIGNET_REGION_NAME)
 
 
 #-----------------------------------------------------------------------------------
