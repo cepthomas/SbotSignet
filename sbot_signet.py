@@ -11,7 +11,7 @@ SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
 SIGNET_FILE_EXT = '.sigs'
 SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 
-# The current signet collections. This is global across all ST instances/window/project.
+# The current signet collections. This is global across all ST instances/window/projects.
 # Key is current window id, value is the collection of file/line signet locations.
 _sigs = {}
 
@@ -124,7 +124,7 @@ class SignetEvent(sublime_plugin.EventListener):
             # Safe iteration - accumulate elements to del later.
             del_els = []
 
-            win_sigs = _sigs[window.id()]
+            win_sigs = _sigs[winid]
 
             for fn, _ in win_sigs.items():
                 if fn is not None:
@@ -183,7 +183,12 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
 
     def run(self, edit):
         del edit
-        # Get current row.
+
+        # Don't allow signets in temp views.
+        if self.view.is_scratch() is True or self.view.file_name() is None:
+            return
+
+        # Get current selected row.
         caret = sc.get_single_caret(self.view)
         if caret is None:
             return  # -- early return
@@ -323,12 +328,12 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
 
 #-----------------------------------------------------------------------------------
 class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
-    ''' Clear all signets. '''
+    ''' Clear all signets in project. '''
 
     def run(self, edit):
-        # Clear collection for current window only.
         del edit
 
+        # Clear collection for current window only. TODO all in project
         win = self.view.window()
         if win is not None:
             winid = win.id()
@@ -337,8 +342,8 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
                 _sigs[winid] = {}
 
             # Clear visuals in open views.
-            for vv in win.views():
-                vv.erase_regions(SIGNET_REGION_NAME)
+            for v in win.views():
+                v.erase_regions(SIGNET_REGION_NAME)
 
 
 #-----------------------------------------------------------------------------------
