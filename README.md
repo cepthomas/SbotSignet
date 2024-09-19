@@ -9,7 +9,7 @@ Built for ST4 on Windows and Linux (lightly tested).
 
 ## Features
 
-- Persisted per project to `...\Packages\User\.SbotStore\<project>.sigs`.
+- Persisted per project to `...\Packages\User\.SbotStore\sigs.store`.
 - Next/previous traverses just the current file or all files in project.
 
 

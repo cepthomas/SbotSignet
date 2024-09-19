@@ -12,10 +12,9 @@ SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
 SIGNET_STORAGE_FILE = "sigs.store"
 
 
-# The current signet collections. This is global across all ST instances/window/projects.
+# The current signets. This is global across all ST instances/window/projects.
 # {
-#     "project file1":
-#     {
+#     "project file1": {
 #         "file1 with signets": [line numbers],
 #         "file2 with signets": [line numbers],
 #         ...
@@ -24,8 +23,6 @@ SIGNET_STORAGE_FILE = "sigs.store"
 #     ...
 # }
 _sigs = {}
-
-# TODO more try/finally instead of all None checks.
 
 
 #-----------------------------------------------------------------------------------
@@ -40,49 +37,38 @@ class SignetEvent(sublime_plugin.EventListener):
 
     # Need to track what's been initialized.
     _views_inited = set()
-    # _store_fn = None
 
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-        sc.debug(f'on_init() entry')
         if len(views) > 0:
             view = views[0]
             win = view.window()
-            if win is not None: # view.window() is None here sometimes?
+            if win is not None:
                 project_fn = win.project_file_name()
-                # self._store_fn = sc.get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
-                # sc.debug(f'on_init() proj:{_get_project_name(win)}')
                 self._read_store()
                 for view in views:
                     self._init_view(view)
 
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
-        # sc.debug(f'on_load_project() {_get_project_name(window)}')
-        # not again self._read_store(window)
         for view in window.views():
             self._init_view(view)
 
     def on_pre_close_project(self, window):
-        ''' Save to file when closing window/project. Seems to be called twice. '''
-        # sc.debug(f'on_pre_close_project() proj:{_get_project_name(window)}')
+        ''' Save to file when closing window/project. '''
         self._write_store()
 
     def on_load(self, view):
         ''' Load a new file. '''
-        # sc.debug(f'on_load() proj:{_get_project_name(view.window())} file:{view.file_name()}')
-        # sc.debug(f'file:{view.file_name()}')
         self._init_view(view)
 
     # def on_pre_close(self, view):
     #     ''' This happens after on_pre_close_project(). Get the current sigs for the view. '''
-    #     sc.debug(f'on_pre_close() proj:{_get_project_name(view.window())}')
     #     self._collect_sigs(view)
 
     def on_deactivated(self, view):
         ''' This happens after view loses focus. Get the current sigs for the view. '''
-        # sc.debug(f'on_deactivated() proj:{_get_project_name(view.window())}')
         self._collect_sigs(view)
 
     def _init_view(self, view):
@@ -253,18 +239,18 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         if win is None:
             return  # --- early return
 
-        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        nav_all_files = settings.get('nav_all_files')
-
-        done = False
-
         caret = sc.get_single_caret(view)
         if caret is None:
             return  # -- early return
 
+        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+        nav_all_files = settings.get('nav_all_files')
+
         sel_row, _ = view.rowcol(caret)  # current selected row
         incr = +1 if next else -1
         array_end = 0 if next else -1
+
+        done = False
 
         # 1) next: If there's another bookmark below -> goto it
         # 1) prev: If there's another bookmark above -> goto it
@@ -304,10 +290,6 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
                 if fn is not None:
                     if win.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
                         vv = sc.wait_load_file(win, fn, rows[array_end])
-                        # vv = window.open_file(fn)
-                        # endrow = rows[array_end]
-                        # sublime.set_timeout(lambda r=endrow: wait_load_file(vv, r), 10)  # already 1-based in file
-                        # window.focus_view(vv)
                         done = True
                         break
 
