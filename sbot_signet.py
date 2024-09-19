@@ -8,12 +8,24 @@ from . import sbot_common as sc
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
-SIGNET_FILE_EXT = '.sigs'
 SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
+SIGNET_STORAGE_FILE = "sigs.store"
+
 
 # The current signet collections. This is global across all ST instances/window/projects.
-# Key is current window id, value is the collection of file/line signet locations.
+# {
+#     "project file1":
+#     {
+#         "file1 with signets": [line numbers],
+#         "file2 with signets": [line numbers],
+#         ...
+#     },
+#     "project file2":
+#     ...
+# }
 _sigs = {}
+
+# TODO more try/finally instead of all None checks.
 
 
 #-----------------------------------------------------------------------------------
@@ -22,174 +34,152 @@ def plugin_loaded():
     sc.debug(f'plugin_loaded() {__package__}')
 
 
-def get_project_name(win):
-    project_fn = win.project_file_name()
-    dir, fn = os.path.split(project_fn)
-    return fn.replace('.sublime-project', '')
-
-
 #-----------------------------------------------------------------------------------
 class SignetEvent(sublime_plugin.EventListener):
     ''' Listener for view specific events of interest. '''
 
     # Need to track what's been initialized.
     _views_inited = set()
-    _store_fn = None
-
-# 2024-09-19 08:29:43.112 INF sbot_signet.py:41 on_init()
-# 2024-09-19 08:29:43.113 INF sbot_signet.py:48 project:sbot
-
-# 2024-09-19 08:29:51.284 INF sbot_signet.py:55 on_load_project()
-# 2024-09-19 08:29:51.284 INF sbot_signet.py:56 project:sbot_dev
-
-# 2024-09-19 08:29:51.307 INF sbot_signet.py:67 on_load()
-# 2024-09-19 08:33:55.526 INF sbot_signet.py:79 file:C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\SbotDev\sbot_dev.py
-# 2024-09-19 08:29:51.308 INF sbot_signet.py:68 project:sbot_dev
-
-# 2024-09-19 08:35:41.757 INF sbot_signet.py:87 on_load()
-# 2024-09-19 08:35:41.757 INF sbot_signet.py:88 file:C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\User\.SbotStore\sbot.log
-# 2024-09-19 08:35:41.757 INF sbot_signet.py:89 project:sbot_dev
+    # _store_fn = None
 
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
-        sc.debug(f'on_init()')
+        sc.debug(f'on_init() entry')
         if len(views) > 0:
             view = views[0]
             win = view.window()
             if win is not None: # view.window() is None here sometimes?
                 project_fn = win.project_file_name()
-                self._store_fn = sc.get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
-                sc.debug(f'project:{get_project_name(win)}')
-                self._open_sigs(win)
+                # self._store_fn = sc.get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
+                # sc.debug(f'on_init() proj:{_get_project_name(win)}')
+                self._read_store()
                 for view in views:
                     self._init_view(view)
 
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
-        sc.debug(f'on_load_project()')
-        sc.debug(f'project:{get_project_name(window)}')
-        self._open_sigs(window)
+        # sc.debug(f'on_load_project() {_get_project_name(window)}')
+        # not again self._read_store(window)
         for view in window.views():
             self._init_view(view)
 
     def on_pre_close_project(self, window):
         ''' Save to file when closing window/project. Seems to be called twice. '''
-        self._save_sigs(window)
+        # sc.debug(f'on_pre_close_project() proj:{_get_project_name(window)}')
+        self._write_store()
 
     def on_load(self, view):
         ''' Load a new file. '''
-        sc.debug(f'on_load()')
-        sc.debug(f'file:{view.file_name()}')
-        sc.debug(f'project:{get_project_name(view.window())}')
+        # sc.debug(f'on_load() proj:{_get_project_name(view.window())} file:{view.file_name()}')
+        # sc.debug(f'file:{view.file_name()}')
         self._init_view(view)
 
-    def on_pre_close(self, view):
-        ''' This happens after on_pre_close_project() Get the current sigs for the view. '''
-        # Window is still valid here.
-        self._collect_sigs(view)
+    # def on_pre_close(self, view):
+    #     ''' This happens after on_pre_close_project(). Get the current sigs for the view. '''
+    #     sc.debug(f'on_pre_close() proj:{_get_project_name(view.window())}')
+    #     self._collect_sigs(view)
 
     def on_deactivated(self, view):
-        # Window is still valid here.
+        ''' This happens after view loses focus. Get the current sigs for the view. '''
+        # sc.debug(f'on_deactivated() proj:{_get_project_name(view.window())}')
         self._collect_sigs(view)
 
     def _init_view(self, view):
         ''' Lazy init. '''
         fn = view.file_name()
-        if view.is_scratch() is False and fn is not None:
-            # Init the view if not already.
-            vid = view.id()
-            if vid not in self._views_inited:
-                self._views_inited.add(vid)
+        if view.is_scratch() is True or fn is None:
+            return
 
-                # Init the view with any persisted values.
-                rows = None  # Default
-                winid = view.window().id()
-                fn = view.file_name()
-                if winid in _sigs:
-                    if fn in _sigs[winid]:
-                        rows = _sigs[winid][fn]
+        project_sigs = _get_project_sigs(view, init=False)
+        if project_sigs is None:
+            return
 
-                if rows is not None:
-                    # Update visual signets, brutally. This is the ST way.
-                    regions = []
-                    for r in rows:
-                        pt = view.text_point(r - 1, 0)  # ST is 0-based
-                        regions.append(sublime.Region(pt, pt))
-                    settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-                    view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
+        # Init the view if not already.
+        vid = view.id()
+        if vid not in self._views_inited:
+            self._views_inited.add(vid)
 
-    def _open_sigs(self, window):
-        ''' General project opener. '''
-        winid = window.id()
-        # project_fn = window.project_file_name()
+            # Init the view with any persisted values.
+            rows = None  # Default
+            winid = view.window().id()
+            fn = view.file_name()
 
-        if self._store_fn is not None:
-            winid = window.id()
+            if fn in project_sigs:
+                rows = project_sigs[fn]
 
-            if os.path.isfile(self._store_fn):
-                with open(self._store_fn, 'r') as fp:
-                    values = json.load(fp)
-                    _sigs[winid] = values
-            else:
-                # Assumes new file.
-                sublime.status_message('Creating new signets file')
-                _sigs[winid] = {}
+            if rows is not None:
+                # Update visual signets, brutally. This is the ST way.
+                regions = []
+                for r in rows:
+                    pt = view.text_point(r - 1, 0)  # ST is 0-based
+                    regions.append(sublime.Region(pt, pt))
+                settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+                view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
-    def _save_sigs(self, window):
-        ''' General project saver. '''
-        if self._store_fn is not None:
-            winid = window.id()
+    def _read_store(self):
+        ''' General project opener. Cleans up bad entries '''
+        global _sigs
 
-            # Remove invalid files and any empty values.
-            # Safe iteration - accumulate elements to del later.
-            del_els = []
+        store_fn = sc.get_store_fn(SIGNET_STORAGE_FILE)
+        if os.path.isfile(store_fn):
+            try:
+                with open(store_fn, 'r') as fp:
+                    _temp_sigs = json.load(fp)
+                    # Sanity checks. Easier to make a new clean collection rather than remove parts.
+                    _sigs.clear()
 
-            win_sigs = _sigs[winid]
+                    for proj_fn, proj_sigs in _temp_sigs.items():
+                        if os.path.exists(proj_fn):
+                            files = {}
+                            for fn, lines in _temp_sigs[proj_fn].items():
+                                if os.path.exists(fn) and len(lines) > 0:
+                                    files[fn] = lines
+                            if len(files) > 0:
+                                _sigs[proj_fn] = files
 
-            for fn, _ in win_sigs.items():
-                if fn is not None:
-                    if not os.path.exists(fn):
-                        del_els.append((winid, fn))
-                    elif len(win_sigs[fn]) == 0:
-                        del_els.append((winid, fn))
+            except Exception as e:
+                sc.error(f'Error reading {store_fn}: {e}', e.__traceback__)
 
-            # Now remove from collection.
-            for (winid, fn) in del_els:
-                del _sigs[winid][fn]
+        else:  # Assume new file with default fields.
+            sublime.status_message('Creating new signets file')
+            _sigs = {}
 
-            # Update the signets as they may have moved during editing.
-            for view in window.views():
-                self._collect_sigs(view)
+    def _write_store(self):  #, window):
+        ''' Save everything. '''
+        global _sigs
 
-            # Now save, or delete if empty.
-            if len(win_sigs) > 0:
-                with open(self._store_fn, 'w') as fp:
-                    json.dump(win_sigs, fp, indent=4)
-            elif os.path.isfile(self._store_fn):
-                os.remove(self._store_fn)
+        store_fn = sc.get_store_fn(SIGNET_STORAGE_FILE)
+
+        try:
+            with open(store_fn, 'w') as fp:
+                json.dump(_sigs, fp, indent=4)
+        except Exception as e:
+            sc.error(f'Error writing {store_fn}: {e}', e.__traceback__)
 
     def _collect_sigs(self, view):
-        ''' Update the signets as they may have moved during editing. '''
+        ''' Update the signets from the view as they may have moved during editing. '''
 
         fn = view.file_name()
         window = view.window()
 
-        if fn is not None and window is not None and window.id() in _sigs:
-            win_sigs = _sigs[window.id()]
+        project_sigs = _get_project_sigs(view, init=False)
+
+        if project_sigs is not None:
             regions = view.get_regions(SIGNET_REGION_NAME)
 
             if len(regions) > 0:
-                if fn in win_sigs:
-                    win_sigs[fn].clear()
+                if fn in project_sigs:
+                    project_sigs[fn].clear()
                 else:
-                    win_sigs[fn] = []
+                    project_sigs[fn] = []
+
                 for reg in regions:
                     row, _ = view.rowcol(reg.a)
-                    win_sigs[fn].append(row + 1)
+                    project_sigs[fn].append(row + 1)
             else:
                 try:
-                    win_sigs.delete(fn)
+                    project_sigs.delete(fn)
                 except:
                     pass
 
@@ -199,73 +189,50 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
     ''' Flip the signet. '''
 
     def is_visible(self):
-        ''' Don't allow signets in temp views. '''
+        # Don't allow signets in temp views.
         return self.view.is_scratch() is False and self.view.file_name() is not None
 
     def run(self, edit):
         del edit
 
+        view = self.view
+        win = view.window()
+        fn = view.file_name()
+
         # Don't allow signets in temp views.
-        if self.view.is_scratch() is True or self.view.file_name() is None:
+        if view.is_scratch() is True or view.file_name() is None:
             return
 
         # Get current selected row.
-        caret = sc.get_single_caret(self.view)
+        caret = sc.get_single_caret(view)
         if caret is None:
             return  # -- early return
 
-        sel_row, _ = self.view.rowcol(caret)
-
-        drows = _get_view_signet_rows(self.view)
+        sel_row, _ = view.rowcol(caret)
+        sig_rows = _get_view_signet_rows(view)
 
         if sel_row != -1:
-            # Is there one currently at the selected row?
-            existing = sel_row in drows
+            # Do the toggle. Is there one currently at the selected row?
+            existing = sel_row in sig_rows
             if existing:
-                drows.remove(sel_row)
+                sig_rows.remove(sel_row)
             else:
-                drows.append(sel_row)
+                sig_rows.append(sel_row)
 
         # Update collection.
-        crows = None  # Default
-        win = self.view.window()
+        project_sigs = _get_project_sigs(view)
 
+        if project_sigs is not None:
+            project_sigs[fn] = sig_rows
 
-        #############################################
-        fn = self.view.file_name()
-        so = id(_sigs)
-        if win is not None:
-            winid = win.id()
-            pn = win.project_file_name()
-            sc.debug(f'===== winid:{winid} pn:{pn} so:{so}')
-        else:
-            sc.debug(f'===== no win! fn:{fn} so:{so}')
-        #############################################
+            # Update visual signets, brutally. This is the ST way.
+            regions = []
+            for r in sig_rows:
+                pt = view.text_point(r, 0)  # 0-based
+                regions.append(sublime.Region(pt, pt))
 
-
-
-        if win is not None:
-            winid = win.id()
-            fn = self.view.file_name()
-
-            if winid in _sigs:
-                if fn not in _sigs[winid]:
-                    # Add a new one.
-                    _sigs[winid][fn] = []
-
-        if crows is not None:
-            crows.clear()
-            for r in drows:
-                crows.append(r + 1)
-
-        # Update visual signets, brutally. This is the ST way.
-        regions = []
-        for r in drows:
-            pt = self.view.text_point(r, 0)  # 0-based
-            regions.append(sublime.Region(pt, pt))
-
-        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
-        self.view.add_regions(SIGNET_REGION_NAME, regions, str(settings.get('scope')), SIGNET_ICON)
+            settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+            view.add_regions(SIGNET_REGION_NAME, regions, str(settings.get('scope')), SIGNET_ICON)
 
 
 #-----------------------------------------------------------------------------------
@@ -277,14 +244,13 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         del edit
         next = where == 'next'
 
+        project_sigs = _get_project_sigs(self.view, init=False)
+        if project_sigs is None:
+            return  # --- early return
+
         view = self.view
         win = view.window()
         if win is None:
-            return  # --- early return
-
-        winid = win.id()
-
-        if winid not in _sigs:
             return  # --- early return
 
         settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
@@ -334,9 +300,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         # 3) next: Else if there is a signet file in the project that is not open -> open it, focus tab, goto first signet
         # 3) prev: Else if there is a signet file in the project that is not open -> open it, focus tab, goto last signet
         if not done:
-            winid = win.id()
-
-            for fn, rows in _sigs[winid].items():
+            for fn, rows in project_sigs.items():
                 if fn is not None:
                     if win.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
                         vv = sc.wait_load_file(win, fn, rows[array_end])
@@ -369,17 +333,21 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         del edit
 
-        # Clear collection for current window only. TODO all in project
-        win = self.view.window()
-        if win is not None:
-            winid = win.id()
+        project_sigs = _get_project_sigs(self.view, init=False)
+        if project_sigs is None:
+            return  # --- early return
 
-            if winid in _sigs:
-                _sigs[winid] = {}
-
+        # Bam.
+        try:
+            del _sigs[self.view.window().project_file_name()]  # pyright: ignore
+        # except Exception as e:
+        #     pass
+        finally:
             # Clear visuals in open views.
-            for v in win.views():
-                v.erase_regions(SIGNET_REGION_NAME)
+            win = self.view.window()
+            if win is not None:
+                for v in win.views():
+                    v.erase_regions(SIGNET_REGION_NAME)
 
 
 #-----------------------------------------------------------------------------------
@@ -391,3 +359,26 @@ def _get_view_signet_rows(view):
         sig_rows.append(row)
     sig_rows.sort()
     return sig_rows
+
+
+#-----------------------------------------------------------------------------------
+def _get_project_name(win):
+    ''' Get the project name associated with this window.'''
+    project_fn = win.project_file_name()
+    dir, fn = os.path.split(project_fn)
+    return fn.replace('.sublime-project', '')
+
+
+#-----------------------------------------------------------------------------------
+def _get_project_sigs(view, init=True):
+    ''' Get the signets associated with this view or None. Option to create a new entry if missing.'''
+    win = view.window()
+    project_fn = win.project_file_name()
+    if project_fn not in _sigs:
+        if init:
+            _sigs[project_fn] = {}
+            return _sigs[project_fn]
+        else:
+            return None
+    else:
+        return _sigs[project_fn]
