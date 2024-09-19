@@ -19,13 +19,13 @@ _sigs = {}
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     '''Called per plugin instance.'''
-    sc.info(f'plugin_loaded() {__package__}')
+    sc.debug(f'plugin_loaded() {__package__}')
 
 
-#-----------------------------------------------------------------------------------
-def plugin_unloaded():
-    '''Ditto.'''
-    pass
+def get_project_name(win):
+    project_fn = win.project_file_name()
+    dir, fn = os.path.split(project_fn)
+    return fn.replace('.sublime-project', '')
 
 
 #-----------------------------------------------------------------------------------
@@ -36,21 +36,39 @@ class SignetEvent(sublime_plugin.EventListener):
     _views_inited = set()
     _store_fn = None
 
+# 2024-09-19 08:29:43.112 INF sbot_signet.py:41 on_init()
+# 2024-09-19 08:29:43.113 INF sbot_signet.py:48 project:sbot
+
+# 2024-09-19 08:29:51.284 INF sbot_signet.py:55 on_load_project()
+# 2024-09-19 08:29:51.284 INF sbot_signet.py:56 project:sbot_dev
+
+# 2024-09-19 08:29:51.307 INF sbot_signet.py:67 on_load()
+# 2024-09-19 08:33:55.526 INF sbot_signet.py:79 file:C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\SbotDev\sbot_dev.py
+# 2024-09-19 08:29:51.308 INF sbot_signet.py:68 project:sbot_dev
+
+# 2024-09-19 08:35:41.757 INF sbot_signet.py:87 on_load()
+# 2024-09-19 08:35:41.757 INF sbot_signet.py:88 file:C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\User\.SbotStore\sbot.log
+# 2024-09-19 08:35:41.757 INF sbot_signet.py:89 project:sbot_dev
+
     def on_init(self, views):
         ''' First thing that happens when plugin/window created. Load the persistence file. Views are valid.
         Note that this also happens if this module is reloaded - like when editing this file. '''
+        sc.debug(f'on_init()')
         if len(views) > 0:
             view = views[0]
-            w = view.window()
-            if w is not None: # view.window() is None here sometimes.
-                project_fn = w.project_file_name()
+            win = view.window()
+            if win is not None: # view.window() is None here sometimes?
+                project_fn = win.project_file_name()
                 self._store_fn = sc.get_store_fn_for_project(project_fn, SIGNET_FILE_EXT)
-                self._open_sigs(w)
+                sc.debug(f'project:{get_project_name(win)}')
+                self._open_sigs(win)
                 for view in views:
                     self._init_view(view)
 
     def on_load_project(self, window):
         ''' This gets called for new windows but not for the first one. '''
+        sc.debug(f'on_load_project()')
+        sc.debug(f'project:{get_project_name(window)}')
         self._open_sigs(window)
         for view in window.views():
             self._init_view(view)
@@ -60,7 +78,10 @@ class SignetEvent(sublime_plugin.EventListener):
         self._save_sigs(window)
 
     def on_load(self, view):
-        ''' Load a file. '''
+        ''' Load a new file. '''
+        sc.debug(f'on_load()')
+        sc.debug(f'file:{view.file_name()}')
+        sc.debug(f'project:{get_project_name(view.window())}')
         self._init_view(view)
 
     def on_pre_close(self, view):
@@ -208,6 +229,21 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
         # Update collection.
         crows = None  # Default
         win = self.view.window()
+
+
+        #############################################
+        fn = self.view.file_name()
+        so = id(_sigs)
+        if win is not None:
+            winid = win.id()
+            pn = win.project_file_name()
+            sc.debug(f'===== winid:{winid} pn:{pn} so:{so}')
+        else:
+            sc.debug(f'===== no win! fn:{fn} so:{so}')
+        #############################################
+
+
+
         if win is not None:
             winid = win.id()
             fn = self.view.file_name()
