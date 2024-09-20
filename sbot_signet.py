@@ -354,13 +354,14 @@ def _get_project_name(win):
 #-----------------------------------------------------------------------------------
 def _get_project_sigs(view, init=True):
     ''' Get the signets associated with this view or None. Option to create a new entry if missing.'''
+    sigs = None
     win = view.window()
-    project_fn = win.project_file_name()
-    if project_fn not in _sigs:
-        if init:
-            _sigs[project_fn] = {}
-            return _sigs[project_fn]
+    if win is not None:
+        project_fn = win.project_file_name()
+        if project_fn not in _sigs:
+            if init:
+                _sigs[project_fn] = {}
+                sigs = _sigs[project_fn]
         else:
-            return None
-    else:
-        return _sigs[project_fn]
+            sigs = _sigs[project_fn]
+    return sigs
