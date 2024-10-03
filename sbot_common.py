@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import subprocess
 import sublime
+import sublime_plugin
 
 
 #-----------------------------------------------------------------------------------
@@ -48,10 +49,10 @@ def error(message, tb=None):
 
     # Show the user some context info.
     info = [message]
-    if tb is not None:
-        frame = traceback.extract_tb(tb)[-1]
-        info.append(f'at {frame.name}({frame.lineno})')
-        info.append('See the log for detail')
+    # if tb is not None:
+    #     frame = traceback.extract_tb(tb)[-1]
+    #     info.append(f'at {frame.name}({frame.lineno})')
+    info.append('See the log for details')
     sublime.error_message('\n'.join(info))  # This goes to console too.
 
 
@@ -75,16 +76,6 @@ def get_store_fn(fn):
     store_path = os.path.join(sublime.packages_path(), 'User', '.SbotStore')
     pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
     store_fn = os.path.join(store_path, fn)
-    return store_fn
-
-
-#-----------------------------------------------------------------------------------
-def get_store_fn_for_project(project_fn, file_ext):
-    '''Get store file name based on ST project name.'''
-    store_fn = None
-    if project_fn is not None:
-        fn = os.path.basename(project_fn).replace('.sublime-project', file_ext)
-        store_fn = get_store_fn(fn)
     return store_fn
 
 
@@ -228,11 +219,12 @@ def get_path_parts(window, paths):
 
     if path is not None:
         exp_path = expand_vars(path)
-        if os.path.isdir(exp_path):
-            dir = exp_path
-        else:
-            dir, fn = os.path.split(exp_path)
-        path = exp_path
+        if exp_path is not None:
+            if os.path.isdir(exp_path):
+                dir = exp_path
+            else:
+                dir, fn = os.path.split(exp_path)
+            path = exp_path
 
     return (dir, fn, path)
 
