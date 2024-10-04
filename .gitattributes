@@ -1,3 +1,10 @@
-.gitattributes export-ignore
+# Exclude unittests from production builds
+
+# git
+.github/ export-ignore
+.git export-ignore
 .gitignore export-ignore
-# tests export-ignore
+.gitattributes export-ignore
+
+# unit tests
+tests/ export-ignore
