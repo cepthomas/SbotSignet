@@ -1,3 +1,4 @@
+from genericpath import isfile
 import sys
 import os
 import traceback
@@ -95,7 +96,7 @@ def get_single_caret(view):
 def get_sel_regions(view):
     '''Function to get user selection or the whole view if no selection.'''
     regions = []
-    if len(view.sel()[0]) > 0:  # user sel
+    if len(view.sel()) > 0 and  len(view.sel()[0]) > 0:  # user sel
         regions = view.sel()
     else:
         regions = [sublime.Region(0, view.size())]
@@ -222,9 +223,14 @@ def get_path_parts(window, paths):
         if exp_path is not None:
             if os.path.isdir(exp_path):
                 dir = exp_path
-            else:
+                path = exp_path
+            elif os.path.isfile(exp_path):
+                path = exp_path
                 dir, fn = os.path.split(exp_path)
-            path = exp_path
+            else:
+                dir = None
+                fn = None
+                path = None
 
     return (dir, fn, path)
 
