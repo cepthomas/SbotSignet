@@ -5,16 +5,33 @@ import time
 import string
 
 # A crude emulation of the ST api solely for the purpose of debugging plugins.
+# This enables the use of standard components like unittest without using
+# the ST embedded python. Any local flavor of python >= 3.8 should work fine. 
+# 
 # Conforms partly to https://www.sublimetext.com/docs/api_reference.html.
 # Missing items throw NotImplementedError.
-
+# 
 # All internal row/column are 0-based. Client is responsible for converting for UI 1-based.
 # Position is always 0-based.
 # Some guessing as to how ST validates args - seems to be clamping not throwing.
 
 
-#---------------- Internal items to support emulation and debug --------------------------
-# Added stuff has underscore _name.
+#------------------------------------------------------------
+#---------------- Internal items ----------------------------
+#------------------------------------------------------------
+
+# Get a reference to myself. Seems like it shouldn't work but, python...
+import emu_sublime_api
+
+# Add path to code under test - assumed parent dir.
+_cut_path = os.path.join(os.path.dirname(__file__), '..')
+if _cut_path not in sys.path:
+    sys.path.insert(0, _cut_path)
+
+# Thunk the system so code under test sees this emulation rather than the real libs.
+sys.modules["sublime"] = emu_sublime_api
+sys.modules["sublime_plugin"] = emu_sublime_api
+
 
 _settings = None
 _clipboard = ''
@@ -44,15 +61,71 @@ def _reset():
     _view_id = 0
 
 
+#------------------------------------------------------------
+#---------------- sublime_plugin emmulation -----------------
+#------------------------------------------------------------
 
-#---------------- sublime.definitions --------------------------
+# https://www.sublimetext.com/docs/api_reference.html
 
+# If you are going to interact with the current view, use TextCommand,
+# otherwise use WindowCommand. Unknown use for ApplicationCommand.
+#
+# EventListener Class: Note that many of these events are triggered by the buffer underlying the view,
+# and thus the method is only called once, with the first view as the parameter.
+#
+# ViewEventListener Class: A class that provides similar event handling to EventListener, but bound
+# to a specific view. Provides class method-based filtering to control what views objects are created for.
+
+class CommandInputHandler():
+    pass
+
+
+class TextInputHandler(CommandInputHandler):
+    pass
+
+
+class ListInputHandler(CommandInputHandler):
+    pass
+
+
+class Command():
+    pass
+
+
+class WindowCommand(Command):
+    def __init__(self, window):
+        self.window = window
+
+
+class TextCommand(Command):
+    def __init__(self, view):
+        self.view = view
+
+
+class EventListener():
+    pass
+
+
+class ViewEventListener():
+    def __init__(self, view):
+        self.view = view
+
+
+class ZipImporter:
+    pass
+
+
+#------------------------------------------------------------
+#---------------- sublime.definitions -----------------------
+#------------------------------------------------------------
 TRANSIENT = 4
 IGNORECASE = 2
 LITERAL = 1
 
 
-#---------------- sublime.functions() --------------------------
+#------------------------------------------------------------
+#---------------- sublime.functions() -----------------------
+#------------------------------------------------------------
 
 def arch():
     return 'x64'
@@ -119,7 +192,9 @@ def active_window():
     return _window
 
 
-#---------------- sublime.View --------------------------
+#------------------------------------------------------------
+#---------------- sublime.View ------------------------------
+#------------------------------------------------------------
 
 class View():
 
@@ -382,7 +457,9 @@ class View():
         return region
 
 
-#---------------- sublime.Window --------------------------
+#------------------------------------------------------------
+#---------------- sublime.Window ----------------------------
+#------------------------------------------------------------
 
 class Window():
 
@@ -482,7 +559,9 @@ class Window():
         return self._project_data
 
 
-#---------------- sublime.Edit --------------------------
+#------------------------------------------------------------
+#---------------- sublime.Edit ------------------------------
+#------------------------------------------------------------
 
 class Edit:
     def __init__(self, token):
@@ -492,7 +571,9 @@ class Edit:
         return f'Edit({self.edit_token})'
 
 
-#---------------- sublime.Region --------------------------
+#------------------------------------------------------------
+#---------------- sublime.Region ----------------------------
+#------------------------------------------------------------
 
 class Region():
     def __init__(self, a, b=None, xpos=-1):
@@ -570,7 +651,9 @@ class Region():
             (lb > rb and lb < re) or (le > rb and le < re))
 
 
-#---------------- sublime.Selection --------------------------
+#------------------------------------------------------------
+#---------------- sublime.Selection -------------------------
+#------------------------------------------------------------
 
 class Selection():
 
@@ -631,7 +714,9 @@ class Selection():
         raise NotImplementedError()
 
 
+#------------------------------------------------------------
 #---------------- sublime.Settings --------------------------
+#------------------------------------------------------------
 
 class Settings():
 
@@ -654,7 +739,9 @@ class Settings():
         self.settings_storage[key] = value
 
 
-#---------------- sublime.Syntax --------------------------
+#------------------------------------------------------------
+#---------------- sublime.Syntax ----------------------------
+#------------------------------------------------------------
 
 class Syntax():
 
