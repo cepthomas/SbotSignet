@@ -12,7 +12,7 @@ import sbot_common as sc
 
 
 #-----------------------------------------------------------------------------------
-class TestCommon(unittest.TestCase):
+class TestSignet(unittest.TestCase):  # TODOT more tests
 
     def setUp(self):
         pass
@@ -23,10 +23,3 @@ class TestCommon(unittest.TestCase):
     # @unittest.skip('')
     def test_basic(self):
         pass
-
-
-#-----------------------------------------------------------------------------------
-if __name__ == '__main__':
-    # https://docs.python.org/3/library/unittest.html#unittest.main
-    tp = unittest.main()  # verbosity=2, exit=False)
-    print(tp.result)
