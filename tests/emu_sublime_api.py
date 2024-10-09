@@ -4,21 +4,24 @@ import json
 import time
 import string
 
-# A crude emulation of the ST api solely for the purpose of debugging plugins.
-# This enables the use of standard components like unittest without using
-# the ST embedded python. Any local flavor of python >= 3.8 should work fine. 
-# 
-# Conforms partly to https://www.sublimetext.com/docs/api_reference.html.
-# Missing items throw NotImplementedError.
-# 
-# All internal row/column are 0-based. Client is responsible for converting for UI 1-based.
-# Position is always 0-based.
-# Some guessing as to how ST validates args - seems to be clamping not throwing.
+'''
+A simple emulation of the ST api solely for the purpose of debugging plugins.
+This enables the use of standard components like unittest without using
+the ST embedded python. Any local flavor of python >= 3.8 should work fine. 
 
+Some actions don't lend themselves easily to this simple model. For those
+MagicMock comes in handy.
 
-#------------------------------------------------------------
-#---------------- Internal globals --------------------------
-#------------------------------------------------------------
+Conforms partly to https://www.sublimetext.com/docs/api_reference.html.
+Missing items throw NotImplementedError.
+
+All internal row/column are 0-based. Client is responsible for converting for UI 1-based.
+Position is always 0-based.
+
+Some guessing as to how ST validates args - seems to be clamping not throwing.
+'''
+
+#---------- Replace sublime api -----------
 
 # Get a reference to myself. Seems like it shouldn't work but, python...
 import emu_sublime_api
@@ -33,14 +36,16 @@ sys.modules["sublime"] = emu_sublime_api
 sys.modules["sublime_plugin"] = emu_sublime_api
 
 
-# Internal state.
+#--------- Internal states -------------------
+
 _active_window = None
 _next_id = 1
 _settings = None
 _clipboard = ''
 
 
-# Internal utilities.
+#--------- Internal utilities -------------------
+
 def _emu_trace(*args):
     s = ' | '.join(map(str, args))
     print(f'EMU {s}')
@@ -49,6 +54,18 @@ def _get_next_id():
     global _next_id
     _next_id += 1
     return _next_id
+
+
+#--------- Public hooks for emulation ------------
+
+def set_settings(settings):
+    # Explicitly set settings because mocking is a bit convoluted.
+    global _settings
+    _settings = Settings()
+    _settings._settings_storage = settings
+
+    #     _settings = Settings()
+    #     _settings.settings_storage = json.load(fp)
 
 
 #------------------------------------------------------------
@@ -143,8 +160,8 @@ def ok_cancel_dialog(msg, ok_title=""):
     return True
 
 def run_command(cmd, args=None):
-    # Run the named ApplicationCommand.
-    raise NotImplementedError()
+    # Run the named command.
+    _emu_trace(f'run_command():{cmd} {args}')  # TODOT need to be smarter with this.
 
 def set_clipboard(text):
     global _clipboard
@@ -155,11 +172,11 @@ def get_clipboard():
     return _clipboard
 
 def load_settings(base_name):
-    global _settings
-    if _settings is None:  # lazy init
-        with open(base_name) as fp:
-            _settings = Settings()
-            _settings.settings_storage = json.load(fp)
+    # global _settings
+    # if _settings is None:  # lazy init
+    # with open(base_name) as fp:
+    #     _settings = Settings()
+    #     _settings.settings_storage = json.load(fp)
     return _settings
 
 def set_timeout(f, timeout_ms=0):
@@ -181,6 +198,7 @@ class View():
     def __init__(self, view_id):
         self._view_id = view_id
         self._window = Window(-1)
+        self._name = None
         self._file_name = None
         self._buffer = ''
         self._selection = Selection(view_id)
@@ -232,14 +250,16 @@ class View():
         global _settings
         return _settings
 
+    def set_name(self, name):
+        self._name = name
+
     def show_popup(self, content, flags=0, location=-1, max_width=320, max_height=240, on_navigate=None, on_hide=None):
         _emu_trace(f'View.show_popup():{content}')
         raise NotImplementedError()
 
     def run_command(self, cmd, args=None):
-        # Run the named TextCommand TODO need to be smarter with this.
-        # raise NotImplementedError()
-        _emu_trace(f'View.run_command():{cmd} {args}')
+        # Run the named TextCommand 
+        _emu_trace(f'View.run_command():{cmd} {args}')  # TODOT need to be smarter with this.
 
     def sel(self):
         return self._selection
@@ -248,7 +268,7 @@ class View():
     def set_status(self, key, value):
         _emu_trace(f'set_status(): key:{key} value:{value}')
 
-    ##### Translation between row/col and index
+    #--------- Translation between row/col and index ------------
 
     def rowcol(self, point):
         # Get row and column for the point.
@@ -285,7 +305,7 @@ class View():
 
         return point           
 
-    ##### Find ops
+    #------------ Find ops ---------------------------
 
     def find(self, pattern, start_pt, flags=0):
         start_pt = self._validate(start_pt).a
@@ -333,7 +353,7 @@ class View():
         region = self._validate(x)
         return self._find(region.a, region.b, 'full_line')
 
-    ##### Edit ops
+    #------------------- Edit ops --------------------
 
     def insert(self, edit, point, text):
         point = self._validate(point, allow_empty=True).a # allow insert in empty
@@ -345,14 +365,14 @@ class View():
         self._buffer = self._buffer[:region.a] + text + self._buffer[region.b:]
         return len(text)
 
-    ##### Utilities
+    #------------------- Utilities -------------------
 
     def split_by_newlines(self, region):
         region = self._validate(region)
         b = self._buffer[region.a:region.b]
         return b.splitlines()
 
-    ##### Scopes and regions
+    #------------- Scopes and regions ----------------
 
     def scope_name(self, point):
         raise NotImplementedError()
@@ -370,7 +390,8 @@ class View():
     def erase_regions(self, key):
         raise NotImplementedError()
 
-    ##### Public hooks for emulation
+    #--------- Public hooks for emulation ------------
+
     def set_window(self, window):
         self._window = window
 
@@ -380,7 +401,7 @@ class View():
     def set_selection(self, selection):
         self._selection = selection
 
-    ##### Private helpers
+    #------------------ Private helpers --------------
 
     def _validate(self, x, allow_empty=False):
         '''
@@ -455,7 +476,6 @@ class Window():
 
     def __init__(self, id):
         self._id = id
-        # self.settings = None
         self._views = []
         self._active_view = -1  # index into _views
         self._project_data = None
@@ -483,6 +503,12 @@ class Window():
         _emu_trace(f'Window.show_quick_panel(): {items}')
         raise NotImplementedError()
 
+    def create_output_panel(self, name, unlisted=False):
+        _emu_trace(f'Window.create_output_panel(): {name}')
+        view = View(_get_next_id())
+        view.set_name(name)
+        return view
+
     def project_file_name(self):
         return 'StPluginTester.sublime-project'
 
@@ -494,7 +520,7 @@ class Window():
         # Run the named WindowCommand with the (optional) given args.
         # This method is able to run any sort of command, dispatching the command via input focus.
         # run_command("goto_line", {"line": line})
-        raise NotImplementedError()
+        _emu_trace(f'Window.run_command():{cmd} {args}')  # TODOT need to be smarter with this.
 
     def new_file(self, flags=0, syntax=""):
         if flags != 0 or syntax != '':
