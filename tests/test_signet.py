@@ -2,8 +2,7 @@ import sys
 import os
 import traceback
 import unittest
-# from unittest.mock import MagicMock
-
+from unittest.mock import MagicMock
 
 # Set up the sublime emulation environment.
 import emu_sublime_api as emu
@@ -22,6 +21,6 @@ class TestSignet(unittest.TestCase):  # TODOT more tests
     def tearDown(self):
         pass
 
-    # @unittest.skip('')
+    #------------------------------------------------------------
     def test_basic(self):
         pass

@@ -13,16 +13,15 @@ SIGNET_STORAGE_FILE = "sigs.store"
 
 
 # The current signets. This is global across all ST instances/window/projects.
+_sigs = {}
 # {
-#     "project file1": {
-#         "file1 with signets": [line numbers],
-#         "file2 with signets": [line numbers],
+#     "my.sublime-project": {
+#         "file_with_signets_1.ext": [100, 200, ...],
+#         "file_with_signets_2.ext": [101, 201, ...],
 #         ...
 #     },
-#     "project file2":
 #     ...
 # }
-_sigs = {}
 
 
 #-----------------------------------------------------------------------------------

@@ -9,8 +9,8 @@ A simple emulation of the ST api solely for the purpose of debugging plugins.
 This enables the use of standard components like unittest without using
 the ST embedded python. Any local flavor of python >= 3.8 should work fine. 
 
-Some actions don't lend themselves easily to this simple model. For those
-MagicMock comes in handy.
+Some actions don't lend themselves easily to this simple model, usually raises
+NotImplementedError. For those MagicMock is likely a better choice.
 
 Conforms partly to https://www.sublimetext.com/docs/api_reference.html.
 Missing items throw NotImplementedError.
@@ -160,8 +160,8 @@ def ok_cancel_dialog(msg, ok_title=""):
     return True
 
 def run_command(cmd, args=None):
-    # Run the named command.
-    _emu_trace(f'run_command():{cmd} {args}')  # TODOT need to be smarter with this.
+    # Run the named ApplicationCommand.
+    _emu_trace(f'run_command():{cmd} {args}')
 
 def set_clipboard(text):
     global _clipboard
@@ -259,7 +259,7 @@ class View():
 
     def run_command(self, cmd, args=None):
         # Run the named TextCommand 
-        _emu_trace(f'View.run_command():{cmd} {args}')  # TODOT need to be smarter with this.
+        _emu_trace(f'View.run_command():{cmd} {args}')
 
     def sel(self):
         return self._selection
@@ -517,10 +517,8 @@ class Window():
         return _settings
 
     def run_command(self, cmd, args=None):
-        # Run the named WindowCommand with the (optional) given args.
-        # This method is able to run any sort of command, dispatching the command via input focus.
-        # run_command("goto_line", {"line": line})
-        _emu_trace(f'Window.run_command():{cmd} {args}')  # TODOT need to be smarter with this.
+        # Run the named WindowCommand.
+        _emu_trace(f'Window.run_command():{cmd} {args}')
 
     def new_file(self, flags=0, syntax=""):
         if flags != 0 or syntax != '':
