@@ -4,12 +4,12 @@ Sublime Text plugin for enhanced bookmarks. `Bookmark` and `Mark` are already we
 this is `signet` from the French:
 > "Petit ruban ou filet qu'on insère entre les feuillets d'un livre pour marquer l'endroit que l'on veut retrouver."
 
-Built for ST4 on Windows and Linux (lightly tested).
+Built for ST4 on Windows. Linux and OSX should be ok but are minimally tested - PRs welcome.
 
 
 ## Features
 
-- Persisted per project to `...\Packages\User\.SbotStore\sigs.store`.
+- Persisted per project to `...\Packages\User\SignetBookmarks\SignetBookmarks.store`.
 - Next/previous traverses just the current file or all files in project.
 
 
@@ -80,4 +80,4 @@ because you shouldn't need both. In `User\Default (Windows or Linux).sublime-key
 
 - `sbot_common.py` contains miscellaneous common components primarily for internal use by the sbot family.
   This includes a very simple logger primarily for user-facing information, syntax errors and the like.
-  Log file is in $APPDATA\Sublime Text\Packages\User\.SbotStore\sbot.log.
+  Log file is in $APPDATA\Sublime Text\Packages\User\SignetBookmarks\SignetBookmarks.log.

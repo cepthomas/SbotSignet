@@ -260,9 +260,9 @@ def get_path_parts(window, paths):
 #-----------------------------------------------------------------------------------
 def open_path(path):
     '''Acts as if you had clicked the path in the UI. Honors your file associations.'''
-    if platform.system() == 'Darwin':
-        error('Sorry, we don\'t do Macs')
-    elif platform.system() == 'Windows':
+    if platform.system() == 'osx':
+        subprocess.call(['open', path])
+    elif platform.system() == 'windows':
         os.startfile(path)
     else:  # linux variants
         subprocess.run(('xdg-open', path))
@@ -273,16 +273,16 @@ def open_path(path):
 def open_terminal(where):
     '''Open a terminal in where.'''
 
-    # This works for gnome. Maybe should support other desktop types?
+    # TODOF This works for gnome. Maybe should support other desktop types?
     # Kde -> konsole
     # xfce4 -> xfce4-terminal
     # Cinnamon -> x-terminal-emulator
     # MATE -> mate-terminal --window
     # Unity -> gnome-terminal --profile=Default
 
-    if platform.system() == 'Darwin':
-        error('Sorry, we don\'t do Macs')
-    elif platform.system() == 'Windows':
+    if platform.system() == 'osx':
+        os.system(f'open -a Terminal {where}')
+    elif platform.system() == 'windows':
         subprocess.run(f'wt -d "{where}"', shell=False, check=False)  # W10+
     else:  # linux
         subprocess.run(f'gnome-terminal --working-directory="{where}"', shell=False, check=False)
