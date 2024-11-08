@@ -8,9 +8,6 @@ from . import sbot_common as sc
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
-SIGNET_SETTINGS_FILE = "SbotSignet.sublime-settings"
-SIGNET_STORAGE_FILE = "sigs.store"
-
 
 # The current signets. This is global across all ST instances/window/projects.
 _sigs = {}
@@ -27,6 +24,7 @@ _sigs = {}
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     '''Called per plugin instance.'''
+    sc.init('SignetBookmarks')
     sc.debug(f'plugin_loaded() {__package__}')
 
 
@@ -99,14 +97,14 @@ class SignetEvent(sublime_plugin.EventListener):
                 for r in rows:
                     pt = view.text_point(r - 1, 0)  # ST is 0-based
                     regions.append(sublime.Region(pt, pt))
-                settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+                settings = sublime.load_settings(sc.get_settings_fn())
                 view.add_regions(SIGNET_REGION_NAME, regions, settings.get('scope'), SIGNET_ICON)
 
     def _read_store(self):
         ''' General project opener. Cleans up bad entries '''
         global _sigs
 
-        store_fn = sc.get_store_fn(SIGNET_STORAGE_FILE)
+        store_fn = sc.get_store_fn()
         if os.path.isfile(store_fn):
             try:
                 with open(store_fn, 'r') as fp:
@@ -134,7 +132,7 @@ class SignetEvent(sublime_plugin.EventListener):
         ''' Save everything. '''
         global _sigs
 
-        store_fn = sc.get_store_fn(SIGNET_STORAGE_FILE)
+        store_fn = sc.get_store_fn()
 
         try:
             with open(store_fn, 'w') as fp:
@@ -216,7 +214,7 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
                 pt = view.text_point(r, 0)  # 0-based
                 regions.append(sublime.Region(pt, pt))
 
-            settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+            settings = sublime.load_settings(sc.get_settings_fn())
             view.add_regions(SIGNET_REGION_NAME, regions, str(settings.get('scope')), SIGNET_ICON)
 
 
@@ -242,7 +240,7 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         if caret is None:
             return  # -- early return
 
-        settings = sublime.load_settings(SIGNET_SETTINGS_FILE)
+        settings = sublime.load_settings(sc.get_settings_fn())
         nav_all_files = settings.get('nav_all_files')
 
         sel_row, _ = view.rowcol(caret)  # current selected row

@@ -15,7 +15,7 @@ import sublime_plugin
 #---------------------------- Public types -----------------------------------------
 #-----------------------------------------------------------------------------------
 
-# Data type.
+# Data type for shared scopes.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
 LL_ERROR = 0
@@ -27,19 +27,51 @@ LL_DEBUG = 2
 #---------------------------- Private fields ---------------------------------------
 #-----------------------------------------------------------------------------------
 
-# Internal flag.
+
+# Various flags.
+_init_ok = False
 _temp_view_id = None
-
-# Logger stuff.
-_log_fn = None
-
-# Debug or not.
 _mode = int(os.environ.get('SBOT_MODE', 0))
+
+# File names.
+INVALID_FN = '???'
+_log_fn = INVALID_FN
+_store_fn = INVALID_FN
+_settings_fn = INVALID_FN
 
 
 #-----------------------------------------------------------------------------------
 #---------------------------- Public functions -------------------------------------
 #-----------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------
+def init(name):
+    global _init_ok, _log_fn, _store_fn, _settings_fn
+    # Ensure store path exists.
+    store_path = os.path.join(sublime.packages_path(), 'User', name)
+    pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
+    _log_fn = os.path.join(store_path, f'{name}.log')
+    _store_fn = os.path.join(store_path, f'{name}.store')
+    _settings_fn = os.path.join(f'{name}.sublime-settings')
+    _init_ok = True
+
+
+#-----------------------------------------------------------------------------------
+def get_store_fn():
+    ''' File name property.'''
+    return _store_fn
+
+
+#-----------------------------------------------------------------------------------
+def get_settings_fn():
+    ''' File name property.'''
+    return _settings_fn
+
+
+#-----------------------------------------------------------------------------------
+def get_log_fn():
+    ''' File name property.'''
+    return _log_fn
 
 
 #-----------------------------------------------------------------------------------
@@ -68,15 +100,6 @@ def debug(message):
     '''Logger function.'''
     if _mode > 0:
         _write_log(LL_DEBUG, message)
-
-
-#-----------------------------------------------------------------------------------
-def get_store_fn(fn):
-    '''Get store simple file name.'''
-    store_path = os.path.join(sublime.packages_path(), 'User', '.SbotStore')
-    pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
-    store_fn = os.path.join(store_path, fn)
-    return store_fn
 
 
 #-----------------------------------------------------------------------------------
@@ -273,7 +296,7 @@ def open_terminal(where):
 def _write_log(level, message, tb=None):
     '''Format a standard message with caller info and log it.'''
 
-    if _log_fn is None:
+    if _log_fn == INVALID_FN:
         raise RuntimeError('Logger has not been initialized.')
 
     # Gates. Sometimes get stray empty lines.
@@ -317,9 +340,7 @@ def _write_log(level, message, tb=None):
 #----------------------- Finish initialization -------------------------------------
 #-----------------------------------------------------------------------------------
 
-# Initialize logging.
-_log_fn = get_store_fn('sbot.log')
-# Maybe roll over log now.
+# Initialize logging. Maybe roll over log now.
 if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
     bup = _log_fn.replace('.log', '_old.log')
     shutil.copyfile(_log_fn, bup)
