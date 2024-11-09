@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import string
 
 '''
@@ -43,12 +44,18 @@ _next_id = 1
 _settings = None
 _clipboard = ''
 
+TEST_OUT_PATH = os.path.join(os.environ['APPDATA'], 'Sublime Text', 'Packages', 'User', '_Test')
+
+# C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\User\_Test
 
 #--------- Internal utilities -------------------
 
+def _write_trace(cat, s):
+    with open(os.path.join(TEST_OUT_PATH, 'trace.txt'), 'a') as trace:
+        trace.write(f'{cat} {s}' + '\n')
+
 def _emu_trace(*args):
-    s = ' | '.join(map(str, args))
-    print(f'EMU {s}')
+    _write_trace('EMU', ' | '.join(map(str, args)))
 
 def _get_next_id():
     global _next_id
@@ -64,9 +71,11 @@ def set_settings(settings):
     _settings = Settings()
     _settings._settings_storage = settings
 
-    #     _settings = Settings()
-    #     _settings.settings_storage = json.load(fp)
 
+def ext_trace(s):
+    _write_trace('EXT', s)
+
+_write_trace('===', f'{str(datetime.datetime.now())}'[0:-3])
 
 #------------------------------------------------------------
 #---------------- sublime_plugin emmulation -----------------

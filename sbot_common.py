@@ -1,7 +1,6 @@
 import sys
 import os
 import traceback
-import platform
 import collections
 import datetime
 import pathlib
@@ -260,9 +259,9 @@ def get_path_parts(window, paths):
 #-----------------------------------------------------------------------------------
 def open_path(path):
     '''Acts as if you had clicked the path in the UI. Honors your file associations.'''
-    if platform.system() == 'osx':
+    if sublime.platform() == 'osx':
         subprocess.call(['open', path])
-    elif platform.system() == 'windows':
+    elif sublime.platform() == 'Windows':
         os.startfile(path)
     else:  # linux variants
         subprocess.run(('xdg-open', path))
@@ -280,9 +279,11 @@ def open_terminal(where):
     # MATE -> mate-terminal --window
     # Unity -> gnome-terminal --profile=Default
 
-    if platform.system() == 'osx':
+    print('>>>', sublime.platform(), where)
+
+    if sublime.platform() == 'osx':
         os.system(f'open -a Terminal {where}')
-    elif platform.system() == 'windows':
+    elif sublime.platform() == 'windows':
         subprocess.run(f'wt -d "{where}"', shell=False, check=False)  # W10+
     else:  # linux
         subprocess.run(f'gnome-terminal --working-directory="{where}"', shell=False, check=False)

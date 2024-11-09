@@ -2,7 +2,10 @@ import os
 import json
 import sublime
 import sublime_plugin
-from . import sbot_common as sc
+try:
+    from . import sbot_common as sc  # normal import
+except:
+    import sbot_common as sc  # unittest import
 
 
 # Definitions.
