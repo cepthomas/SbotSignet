@@ -261,7 +261,7 @@ def open_path(path):
     '''Acts as if you had clicked the path in the UI. Honors your file associations.'''
     if sublime.platform() == 'osx':
         subprocess.call(['open', path])
-    elif sublime.platform() == 'Windows':
+    elif sublime.platform() == 'windows':
         os.startfile(path)
     else:  # linux variants
         subprocess.run(('xdg-open', path))
@@ -278,8 +278,6 @@ def open_terminal(where):
     # Cinnamon -> x-terminal-emulator
     # MATE -> mate-terminal --window
     # Unity -> gnome-terminal --profile=Default
-
-    print('>>>', sublime.platform(), where)
 
     if sublime.platform() == 'osx':
         os.system(f'open -a Terminal {where}')

@@ -16,7 +16,8 @@ import sbot_common as sc
 class TestSignet(unittest.TestCase):  # TODOT more tests
 
     def setUp(self):
-        sc.init('_Test')
+        # sc.init('_Test')
+        pass
 
     def tearDown(self):
         pass
