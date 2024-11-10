@@ -10,67 +10,73 @@ import sublime
 import sublime_plugin
 
 
-#-----------------------------------------------------------------------------------
-#---------------------------- Public types -----------------------------------------
-#-----------------------------------------------------------------------------------
-
 # Data type for shared scopes.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
+# Log levels.
 LL_ERROR = 0
 LL_INFO = 1
 LL_DEBUG = 2
 
-
-#-----------------------------------------------------------------------------------
-#---------------------------- Private fields ---------------------------------------
-#-----------------------------------------------------------------------------------
-
-
-# Various flags.
-_init_ok = False
 _temp_view_id = None
+
 _mode = int(os.environ.get('SBOT_MODE', 0))
 
-# File names.
-INVALID_FN = '???'
-_log_fn = INVALID_FN
-_store_fn = INVALID_FN
-_settings_fn = INVALID_FN
+#-----------------------------------------------------------------------------------
+#----------------------- Initialization --------------------------------------------
+#-----------------------------------------------------------------------------------
+
+# sbot_common is a generic module but needs to know the name of the parent/owner module.
+# Get it from the settings file name then initialize known locations for persistence, logging, settings etc.
+_friendly_name = ''
+_this_dir, _ = os.path.split(__file__)
+for fn in os.listdir(_this_dir):
+    p = pathlib.Path(fn)
+    if p.suffix == '.sublime-settings':
+        _friendly_name = p.stem
+        break
+
+# Now make the useful filenames. Ensure store path exists.
+_store_path = os.path.join(sublime.packages_path(), 'User', _friendly_name)
+pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
+_log_fn = os.path.join(_store_path, f'{_friendly_name}.log')
+
+# Initialize logging. Maybe roll over log now.
+if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
+    bup = _log_fn.replace('.log', '_old.log')
+    shutil.copyfile(_log_fn, bup)
+    # Clear current log file.
+    with open(_log_fn, 'w'):
+        pass
 
 
 #-----------------------------------------------------------------------------------
 #---------------------------- Public functions -------------------------------------
 #-----------------------------------------------------------------------------------
 
+
 #-----------------------------------------------------------------------------------
-def init(name):
-    global _init_ok, _log_fn, _store_fn, _settings_fn
-    # Ensure store path exists.
-    store_path = os.path.join(sublime.packages_path(), 'User', name)
-    pathlib.Path(store_path).mkdir(parents=True, exist_ok=True)
-    _log_fn = os.path.join(store_path, f'{name}.log')
-    _store_fn = os.path.join(store_path, f'{name}.store')
-    _settings_fn = os.path.join(f'{name}.sublime-settings')
-    _init_ok = True
+def get_friendly_name():
+    ''' How this is known to humans.'''
+    return _friendly_name
 
 
 #-----------------------------------------------------------------------------------
 def get_store_fn():
-    ''' File name property.'''
-    return _store_fn
+    ''' Where to keep this module's stuff.'''
+    return os.path.join(_store_path, f'{_friendly_name}.store')
 
 
 #-----------------------------------------------------------------------------------
 def get_settings_fn():
-    ''' File name property.'''
-    return _settings_fn
+    ''' Get the settings fn suitable for ST.'''
+    return os.path.join(f'{_friendly_name}.sublime-settings')
 
 
-#-----------------------------------------------------------------------------------
-def get_log_fn():
-    ''' File name property.'''
-    return _log_fn
+# #-----------------------------------------------------------------------------------
+# def get_log_fn():
+#     ''' File name property.'''
+#     return _log_fn
 
 
 #-----------------------------------------------------------------------------------
@@ -295,8 +301,8 @@ def open_terminal(where):
 def _write_log(level, message, tb=None):
     '''Format a standard message with caller info and log it.'''
 
-    if _log_fn == INVALID_FN:
-        raise RuntimeError('Logger has not been initialized.')
+    # if _log_fn == INVALID_FN:
+    #     raise RuntimeError('Logger has not been initialized.')
 
     # Gates. Sometimes get stray empty lines.
     if len(message) == 0:
@@ -333,16 +339,3 @@ def _write_log(level, message, tb=None):
             stb = '\n'.join(tblines)
             log.write(stb + '\n')
         log.flush()
-
-
-#-----------------------------------------------------------------------------------
-#----------------------- Finish initialization -------------------------------------
-#-----------------------------------------------------------------------------------
-
-# Initialize logging. Maybe roll over log now.
-if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
-    bup = _log_fn.replace('.log', '_old.log')
-    shutil.copyfile(_log_fn, bup)
-    # Clear current log file.
-    with open(_log_fn, 'w'):
-        pass

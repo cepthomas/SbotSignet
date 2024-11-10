@@ -27,7 +27,6 @@ _sigs = {}
 #-----------------------------------------------------------------------------------
 def plugin_loaded():
     '''Called per plugin instance.'''
-    sc.init('SignetBookmarks')
     sc.debug(f'plugin_loaded() {__package__}')
 
 
