@@ -73,12 +73,6 @@ def get_settings_fn():
     return os.path.join(f'{_friendly_name}.sublime-settings')
 
 
-# #-----------------------------------------------------------------------------------
-# def get_log_fn():
-#     ''' File name property.'''
-#     return _log_fn
-
-
 #-----------------------------------------------------------------------------------
 def error(message, tb=None):
     '''Logger function.'''
