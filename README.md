@@ -15,12 +15,11 @@ Built for ST4 on Windows. Linux and OSX should be ok but are minimally tested - 
 
 ## Commands and Menus
 
-| Command                    | Description                   | Args             |
-| :--------                  | :-------                      | :--------        |
-| sbot_toggle_signet         | Toggle signet at row          |                  |
-| sbot_goto_signet           | Goto next signet              | where: next      |
-| sbot_goto_signet           | Goto previous signet          | where: prev      |
-| sbot_clear_all_signets     | Clear all signets in project  |                  |
+| Command                    | Description                   | Args                 |
+| :--------                  | :-------                      | :--------            |
+| sbot_toggle_signet         | Toggle signet at row          |                      |
+| sbot_goto_signet           | Goto next/previous signet     | where: next OR prev  |
+| sbot_clear_all_signets     | Clear all signets in project  |                      |
 
 
 There is no default `Context.sublime-menu` file in this plugin.
