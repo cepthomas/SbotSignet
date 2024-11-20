@@ -1,6 +1,6 @@
 {
     // Scope name for gutter icon color.
-    "scope": "keyword",
+    "scope": "region.redish",
 
     // Traverse extent: all project files or just current file.
     "nav_all_files": true,
