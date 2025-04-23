@@ -80,3 +80,5 @@ because you shouldn't need both. In `User\Default (Windows or Linux).sublime-key
 - `sbot_common.py` contains miscellaneous common components primarily for internal use by the sbot family.
   This includes a very simple logger primarily for user-facing information, syntax errors and the like.
   Log file is in `$APPDATA\Sublime Text\Packages\User\SignetBookmarks\SignetBookmarks.log`.
+- If you pull the source it must be in a directory named `Signet Bookmarks` rather than the repo name.
+  This is to satisfy PackageControl naming requirements.

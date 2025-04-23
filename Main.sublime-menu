@@ -17,7 +17,7 @@
                                 "command": "edit_settings",
                                 "args":
                                 {
-                                    "base_file": "${packages}/SbotSignet/SignetBookmarks.sublime-settings",
+                                    "base_file": "${packages}/Signet Bookmarks/SignetBookmarks.sublime-settings",
                                     "default": "{\n$0\n}\n"
                                 }
                             },
