@@ -8,6 +8,9 @@ except:
     import sbot_common as sc  # unittest import
 
 
+# TODO list/picker for target
+
+
 # Definitions.
 SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
