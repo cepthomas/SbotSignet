@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sublime
 import sublime_plugin
+from . import config
 
 
 # Data type for shared scopes.
@@ -25,20 +26,12 @@ _temp_view_id = None
 #----------------------- Initialization --------------------------------------------
 #-----------------------------------------------------------------------------------
 
-# sbot_common is a generic module but needs to know the name of the parent/owner module.
-# Get it from the settings file name then initialize known locations for persistence, logging, settings etc.
-_friendly_name = ''
-_this_dir, _ = os.path.split(__file__)
-for fn in os.listdir(_this_dir):
-    p = pathlib.Path(fn)
-    if p.suffix == '.sublime-settings':
-        _friendly_name = p.stem
-        break
 
 # Now make the useful filenames. Ensure store path exists.
-_store_path = os.path.join(sublime.packages_path(), 'User', _friendly_name)
+_store_path = os.path.join(sublime.packages_path(), 'User', config.friendly_name)
 pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-_log_fn = os.path.join(_store_path, f'{_friendly_name}.log')
+_log_fn = os.path.join(_store_path, f'{config.friendly_name}.log')
+
 
 # Initialize logging. Maybe roll over log now.
 if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
@@ -57,19 +50,19 @@ if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
 #-----------------------------------------------------------------------------------
 def get_friendly_name():
     ''' How this is known to humans.'''
-    return _friendly_name
+    return config.friendly_name
 
 
 #-----------------------------------------------------------------------------------
 def get_store_fn():
     ''' Where to keep this module's stuff.'''
-    return os.path.join(_store_path, f'{_friendly_name}.store')
+    return os.path.join(_store_path, f'{config.friendly_name}.store')
 
 
 #-----------------------------------------------------------------------------------
 def get_settings_fn():
     ''' Get the settings fn suitable for ST.'''
-    return os.path.join(f'{_friendly_name}.sublime-settings')
+    return os.path.join(f'{config.friendly_name}.sublime-settings')
 
 
 #-----------------------------------------------------------------------------------
@@ -145,7 +138,7 @@ def create_new_view(window, text, reuse=True):
     view.run_command('select_all')
     view.run_command('cut')
     view.run_command('append', {'characters': text})  # insert has some odd behavior - indentation
-    
+
     window.focus_view(view)
 
     return view
@@ -264,13 +257,13 @@ def open_path(path):
     else:  # linux variants
         subprocess.run(('xdg-open', path))
     return True
-    
+
 
 #-----------------------------------------------------------------------------------
 def open_terminal(where):
     '''Open a terminal in where.'''
 
-    # TODOF This works for gnome. Maybe should support other desktop types?
+    # TODO This works for gnome. Maybe should support other desktop types?
     # Kde -> konsole
     # xfce4 -> xfce4-terminal
     # Cinnamon -> x-terminal-emulator
