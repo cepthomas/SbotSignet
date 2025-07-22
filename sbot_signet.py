@@ -8,7 +8,7 @@ except:
     import sbot_common as sc  # unittest import
 
 
-# TODO list/picker for target
+# TODO Allow signets for new and unsaved files. Not persisted. If the file is saved then persisted.
 
 
 # Definitions.
@@ -25,6 +25,7 @@ _sigs = {}
 #     },
 #     ...
 # }
+
 
 
 #-----------------------------------------------------------------------------------
@@ -225,12 +226,13 @@ class SbotToggleSignetCommand(sublime_plugin.TextCommand):
 
 #-----------------------------------------------------------------------------------
 class SbotGotoSignetCommand(sublime_plugin.TextCommand):
-    ''' Navigate to next/prev signet in whole collection. '''
+    ''' Navigate to next/previous/select signet in whole collection. '''
+
+    panel_items = []
 
     def run(self, edit, where):
         # Common navigate to signet in whole collection.
         del edit
-        next = where == 'next'
 
         project_sigs = _get_project_sigs(self.view, init=False)
         if project_sigs is None:
@@ -241,73 +243,109 @@ class SbotGotoSignetCommand(sublime_plugin.TextCommand):
         if win is None:
             return  # --- early return
 
-        caret = sc.get_single_caret(view)
-        if caret is None:
-            return  # -- early return
+        ### What kind of request?
+        if where == 'sel': # user select specific signet
+            self.panel_items.clear()
 
-        settings = sublime.load_settings(sc.get_settings_fn())
-        nav_all_files = settings.get('nav_all_files')
+            for fn, lines in project_sigs.items():
+                for line in lines:
+                    self.panel_items.append(sublime.QuickPanelItem(trigger=f'{fn} line:{line}', kind=sublime.KIND_AMBIGUOUS))
+            win = self.view.window()
+            if win is not None:
+                win.show_quick_panel(self.panel_items, on_select=self.on_sel_sig)
 
-        sel_row, _ = view.rowcol(caret)  # current selected row
-        incr = +1 if next else -1
-        array_end = 0 if next else -1
+        else:
+            caret = sc.get_single_caret(view)
+            if caret is None:
+                return  # -- early return
 
-        done = False
+            next = where == 'next'
 
-        # 1) next: If there's another bookmark below -> goto it
-        # 1) prev: If there's another bookmark above -> goto it
-        if not done:
-            sig_rows = _get_view_signet_rows(view)
-            if not next:
-                sig_rows.reverse()
-            for sr in sig_rows:
-                if (next and sr > sel_row) or (not next and sr < sel_row):
-                    view.run_command("goto_line", {"line": sr + 1})
-                    done = True
-                    break
+            settings = sublime.load_settings(sc.get_settings_fn())
+            nav_all_files = settings.get('nav_all_files')
 
-            # At begin or end. Check for single file operation.
-            if not done and not nav_all_files and len(sig_rows) > 0:
-                view.run_command("goto_line", {"line": sig_rows[0] + 1})
-                done = True
+            sel_row, _ = view.rowcol(caret)  # current selected row
+            incr = +1 if next else -1
+            array_end = 0 if next else -1
 
-        # 2) next: Else if there's an open signet file to the right of this tab -> focus tab, goto first signet
-        # 2) prev: Else if there's an open signet file to the left of this tab -> focus tab, goto last signet
-        if not done:
-            view_index = win.get_view_index(view)[1] + incr
-            while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
-                vv = win.views()[view_index]
-                sig_rows = _get_view_signet_rows(vv)
-                if len(sig_rows) > 0:
-                    win.focus_view(vv)
-                    vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
-                    done = True
-                else:
-                    view_index += incr
+            done = False
 
-        # 3) next: Else if there is a signet file in the project that is not open -> open it, focus tab, goto first signet
-        # 3) prev: Else if there is a signet file in the project that is not open -> open it, focus tab, goto last signet
-        if not done:
-            for fn, rows in project_sigs.items():
-                if fn is not None:
-                    if win.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
-                        vv = sc.wait_load_file(win, fn, rows[array_end])
+            # 1) next: If there's another bookmark below -> goto it
+            # 1) prev: If there's another bookmark above -> goto it
+            if not done:
+                sig_rows = _get_view_signet_rows(view)
+                if not next:
+                    sig_rows.reverse()
+                for sr in sig_rows:
+                    if (next and sr > sel_row) or (not next and sr < sel_row):
+                        view.run_command("goto_line", {"line": sr + 1})
                         done = True
                         break
 
-        # 4) next: Else -> find first tab/file with signets, focus tab, goto first signet
-        # 4) prev: Else -> find last tab/file with signets, focus tab, goto last signet
-        if not done:
-            view_index = 0 if next else len(win.views()) - 1
-            while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
-                vv = win.views()[view_index]
-                sig_rows = _get_view_signet_rows(vv)
-                if len(sig_rows) > 0:
-                    win.focus_view(vv)
-                    vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
+                # At begin or end. Check for single file operation.
+                if not done and not nav_all_files and len(sig_rows) > 0:
+                    view.run_command("goto_line", {"line": sig_rows[0] + 1})
                     done = True
-                else:
-                    view_index += incr
+
+            # 2) next: Else if there's an open signet file to the right of this tab -> focus tab, goto first signet
+            # 2) prev: Else if there's an open signet file to the left of this tab -> focus tab, goto last signet
+            if not done:
+                view_index = win.get_view_index(view)[1] + incr
+                while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
+                    vv = win.views()[view_index]
+                    sig_rows = _get_view_signet_rows(vv)
+                    if len(sig_rows) > 0:
+                        win.focus_view(vv)
+                        vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
+                        done = True
+                    else:
+                        view_index += incr
+
+            # 3) next: Else if there is a signet file in the project that is not open -> open it, focus tab, goto first signet
+            # 3) prev: Else if there is a signet file in the project that is not open -> open it, focus tab, goto last signet
+            if not done:
+                for fn, rows in project_sigs.items():
+                    if fn is not None:
+                        if win.find_open_file(fn) is None and os.path.exists(fn) and len(rows) > 0:
+                            vv = sc.wait_load_file(win, fn, rows[array_end])
+                            done = True
+                            break
+
+            # 4) next: Else -> find first tab/file with signets, focus tab, goto first signet
+            # 4) prev: Else -> find last tab/file with signets, focus tab, goto last signet
+            if not done:
+                view_index = 0 if next else len(win.views()) - 1
+                while not done and ((next and view_index < len(win.views()) or (not next and view_index >= 0))):
+                    vv = win.views()[view_index]
+                    sig_rows = _get_view_signet_rows(vv)
+                    if len(sig_rows) > 0:
+                        win.focus_view(vv)
+                        vv.run_command("goto_line", {"line": sig_rows[array_end] + 1})
+                        done = True
+                    else:
+                        view_index += incr
+
+    def on_sel_sig(self, *args, **kwargs):
+        ''' User signet selection. '''
+        del kwargs
+        if len(args) > 0 and args[0] >= 0:
+            fspec = self.panel_items[args[0]].trigger
+            parts = fspec.split('line:')
+            fn = parts[0].strip()
+            line = int(parts[1].strip())
+
+            # Open the file if not already.
+            win = self.view.window()
+
+            vv = win.find_open_file(fn)
+            if vv is None:
+                vv = sc.wait_load_file(win, fn, line)
+            win.focus_view(vv)
+            vv.run_command("goto_line", {"line": line})
+
+    def is_visible(self):
+        project_sigs = _get_project_sigs(self.view, init=False)
+        return project_sigs is not None
 
 
 #-----------------------------------------------------------------------------------
@@ -335,6 +373,30 @@ class SbotClearAllSignetsCommand(sublime_plugin.TextCommand):
 
 
 #-----------------------------------------------------------------------------------
+class SbotClearFileSignetsCommand(sublime_plugin.TextCommand):
+    ''' Clear signets in current file. '''
+
+    def run(self, edit):
+        del edit
+
+        project_sigs = _get_project_sigs(self.view, init=False)
+        if project_sigs is None:
+            return  # --- early return
+
+        # Bam.
+        try:
+            del _sigs[self.view.window().project_file_name()][self.view.file_name()]  # pyright: ignore
+        # except Exception as e:
+        #     pass
+        finally:
+            # Clear visuals in open views.
+            win = self.view.window()
+            if win is not None:
+                for v in win.views():
+                    v.erase_regions(SIGNET_REGION_NAME)
+
+
+#-----------------------------------------------------------------------------------
 def _get_view_signet_rows(view):
     ''' Get all the signet row numbers in the view. Returns a sorted list. '''
     sig_rows = []
@@ -343,14 +405,6 @@ def _get_view_signet_rows(view):
         sig_rows.append(row)
     sig_rows.sort()
     return sig_rows
-
-
-#-----------------------------------------------------------------------------------
-def _get_project_name(win):
-    ''' Get the project name associated with this window.'''
-    project_fn = win.project_file_name()
-    dir, fn = os.path.split(project_fn)
-    return fn.replace('.sublime-project', '')
 
 
 #-----------------------------------------------------------------------------------

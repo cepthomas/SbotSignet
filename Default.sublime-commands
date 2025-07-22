@@ -2,6 +2,8 @@
     { "caption": "Signet Bookmarks: Toggle", "command": "sbot_toggle_signet" },
     { "caption": "Signet Bookmarks: Next", "command": "sbot_goto_signet", "args": { "where": "next" } },
     { "caption": "Signet Bookmarks: Previous", "command": "sbot_goto_signet", "args": { "where": "prev" } },
+    { "caption": "Signet Bookmarks: Select", "command": "sbot_goto_signet", "args": { "where": "sel" } },
     { "caption": "Signet Bookmarks: Clear All", "command": "sbot_clear_all_signets" },
+    { "caption": "Signet Bookmarks: Clear In File", "command": "sbot_clear_file_signets" },
     { "caption": "Signet Bookmarks: Edit Settings", "command": "edit_settings", "args": { "base_file": "${packages}/SbotSignet/SbotSignet.sublime-settings", "default": "{\n$0\n}\n" } }
 ]

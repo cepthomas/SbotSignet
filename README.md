@@ -12,14 +12,18 @@ Built for ST4 on Windows. Linux and OSX should be ok but are minimally tested - 
 - Persisted per project to `...\Packages\User\SignetBookmarks\SignetBookmarks.store`.
 - Next/previous traverses just the current file or all files in project.
 
+Caveats:
+- Signets not supported in temp/unnamed views.
+
 
 ## Commands and Menus
 
-| Command                    | Description                   | Args                 |
-| :--------                  | :-------                      | :--------            |
-| sbot_toggle_signet         | Toggle signet at row          |                      |
-| sbot_goto_signet           | Goto next/previous signet     | where: next OR prev  |
-| sbot_clear_all_signets     | Clear all signets in project  |                      |
+| Command                    | Description                         | Args                       |
+| :--------                  | :-------                            | :--------                  |
+| sbot_toggle_signet         | Toggle signet at row                |                            |
+| sbot_goto_signet           | Go to next/previous/select signet   | where: next OR prev OR sel |
+| sbot_clear_all_signets     | Clear all signets in project        |                            |
+| sbot_clear_file_signets    | Clear signets in current file       |                            |
 
 
 There is no default `Context.sublime-menu` file in this plugin.
@@ -31,6 +35,7 @@ Add the commands you like to your own `User\Context.sublime-menu` file. Typical 
         { "caption": "Toggle Signet", "command": "sbot_toggle_signet" },
         { "caption": "Next Signet", "command": "sbot_goto_signet", "args": { "where": "next" } },
         { "caption": "Previous Signet", "command": "sbot_goto_signet", "args": { "where": "prev" } },
+        { "caption": "Select Signet", "command": "sbot_goto_signet", "args": { "where": "sel" } },
         { "caption": "Clear All Signets", "command": "sbot_clear_all_signets" }
     ]
 }
