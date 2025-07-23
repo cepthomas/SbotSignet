@@ -47,9 +47,7 @@ _next_id = 1
 _settings = None
 _clipboard = ''
 
-TEST_OUT_PATH = os.path.join(os.environ['APPDATA'], 'Sublime Text', 'Packages', 'User', '_Test')
-
-# C:\Users\cepth\AppData\Roaming\Sublime Text\Packages\User\_Test
+TEST_OUT_PATH = os.path.join(os.path.dirname(__file__), 'out')
 
 #--------- Internal utilities -------------------
 
