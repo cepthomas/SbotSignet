@@ -8,7 +8,10 @@ import string
 '''
 A simple emulation of the ST api solely for the purpose of debugging plugins.
 This enables the use of standard components like unittest without using
-the ST embedded python. Any local flavor of python >= 3.8 should work fine. 
+the ST embedded python. Any local flavor of python >= 3.8 should work fine.
+
+Primarily intended for testing on Windows but should be easy to tweak for nx flavors
+by replacing instances of APPDATA with platform variants.
 
 Some actions don't lend themselves easily to this simple model, usually raises
 NotImplementedError. For those MagicMock is likely a better choice.
@@ -267,7 +270,7 @@ class View():
         raise NotImplementedError()
 
     def run_command(self, cmd, args=None):
-        # Run the named TextCommand 
+        # Run the named TextCommand
         _emu_trace(f'View.run_command():{cmd} {args}')
 
     def sel(self):
@@ -312,7 +315,7 @@ class View():
                     point += 1
                     col_i += 1
 
-        return point           
+        return point
 
     #------------ Find ops ---------------------------
 

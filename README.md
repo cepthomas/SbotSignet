@@ -36,7 +36,7 @@ Add the commands you like to your own `User\Context.sublime-menu` file. Typical 
         { "caption": "Next Signet", "command": "sbot_goto_signet", "args": { "where": "next" } },
         { "caption": "Previous Signet", "command": "sbot_goto_signet", "args": { "where": "prev" } },
         { "caption": "Select Signet", "command": "sbot_goto_signet", "args": { "where": "sel" } },
-        { "caption": "Clear All Signets", "command": "sbot_clear_all_signets" }
+        { "caption": "Clear All", "command": "sbot_clear_all_signets" }
     ]
 }
 ```
@@ -56,7 +56,7 @@ Or they could go in your `User\Main.sublime-menu` file under `Goto`.
                 { "caption": "Toggle Signet", "command": "sbot_toggle_signet" },
                 { "caption": "Next Signet", "command": "sbot_goto_signet", "args": { "where": "next" } },
                 { "caption": "Previous Signet", "command": "sbot_goto_signet", "args": { "where": "prev" } },
-                { "caption": "Clear Signets", "command": "sbot_clear_signets" },
+                { "caption": "Clear All", "command": "sbot_clear_all_signets" },
             ]
         },
     ]
@@ -70,7 +70,6 @@ because you shouldn't need both. In `User\Default (Windows or Linux).sublime-key
 { "keys": ["ctrl+f2"], "command": "sbot_toggle_signet" },
 { "keys": ["f2"], "command": "sbot_goto_signet", "args": { "where": "next" } },
 { "keys": ["shift+f2"], "command": "sbot_goto_signet", "args": { "where": "prev" } },
-{ "keys": ["ctrl+shift+f2"], "command": "sbot_clear_signets" },
 ```
 
 
@@ -84,6 +83,6 @@ because you shouldn't need both. In `User\Default (Windows or Linux).sublime-key
 
 - `sbot_common.py` contains miscellaneous common components primarily for internal use by the sbot family.
   This includes a very simple logger primarily for user-facing information, syntax errors and the like.
-  Log file is in `$APPDATA\Sublime Text\Packages\User\SignetBookmarks\SignetBookmarks.log`.
+  Log file is in `<ST_PACKAGES_DIR>\User\SignetBookmarks\SignetBookmarks.log`.
 - If you pull the source it must be in a directory named `Signet Bookmarks` rather than the repo name.
   This is to satisfy PackageControl naming requirements.
