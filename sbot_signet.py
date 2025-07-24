@@ -8,7 +8,7 @@ except:
     import sbot_common as sc  # unittest import
 
 
-# TODO Allow signets for new and unsaved files. Not persisted. If the file is saved then persisted.
+# TODO Allow signets for new and unsaved files. Not persisted until saved w/filename.
 
 
 # Definitions.
