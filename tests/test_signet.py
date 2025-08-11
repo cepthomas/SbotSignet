@@ -13,7 +13,7 @@ import sbot_signet
 
 
 #-----------------------------------------------------------------------------------
-class TestSignet(unittest.TestCase):  # TEST more tests
+class TestSignet(unittest.TestCase):  # TODO1 more tests
 
     def setUp(self):
         pass
