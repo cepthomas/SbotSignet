@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sublime
 import sublime_plugin
-from . import config
 
 
 # Data type for shared scopes.
@@ -21,6 +20,7 @@ LL_DEBUG = 2
 
 _temp_view_id = None
 
+_friendly_name = 'SignetBookmarks'
 
 #-----------------------------------------------------------------------------------
 #----------------------- Initialization --------------------------------------------
@@ -28,9 +28,9 @@ _temp_view_id = None
 
 
 # Now make the useful filenames. Ensure store path exists.
-_store_path = os.path.join(sublime.packages_path(), 'User', config.friendly_name)
+_store_path = os.path.join(sublime.packages_path(), 'User', _friendly_name)
 pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-_log_fn = os.path.join(_store_path, f'{config.friendly_name}.log')
+_log_fn = os.path.join(_store_path, f'{_friendly_name}.log')
 
 
 # Initialize logging. Maybe roll over log now.
@@ -50,19 +50,19 @@ if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
 #-----------------------------------------------------------------------------------
 def get_friendly_name():
     ''' How this is known to humans.'''
-    return config.friendly_name
+    return _friendly_name
 
 
 #-----------------------------------------------------------------------------------
 def get_store_fn():
     ''' Where to keep this module's stuff.'''
-    return os.path.join(_store_path, f'{config.friendly_name}.store')
+    return os.path.join(_store_path, f'{_friendly_name}.store')
 
 
 #-----------------------------------------------------------------------------------
 def get_settings_fn():
     ''' Get the settings fn suitable for ST.'''
-    return os.path.join(f'{config.friendly_name}.sublime-settings')
+    return os.path.join(f'{_friendly_name}.sublime-settings')
 
 
 #-----------------------------------------------------------------------------------
