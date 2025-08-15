@@ -1,11 +1,13 @@
+import sys
 import os
 import json
 import sublime
 import sublime_plugin
-try:
-    from . import sbot_common as sc  # normal import
-except:
-    import sbot_common as sc  # unittest import
+
+# my_path = os.path.dirname(__file__)
+# if my_path not in sys.path: sys.path.insert(0, my_path)
+
+from . import sbot_common as sc
 
 
 # TODO Allow signets for new and unsaved files. Not persisted until saved w/filename.
