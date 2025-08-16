@@ -1,3 +1,0 @@
-
-
-friendly_name='SignetBookmarks'
