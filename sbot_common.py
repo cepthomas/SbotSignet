@@ -20,7 +20,9 @@ LL_DEBUG = 2
 
 _temp_view_id = None
 
-_friendly_name = 'SignetBookmarks'
+# This will get replaced during the copy process.
+_plugin_name = 'SignetBookmarks'
+
 
 #-----------------------------------------------------------------------------------
 #----------------------- Initialization --------------------------------------------
@@ -28,9 +30,9 @@ _friendly_name = 'SignetBookmarks'
 
 
 # Now make the useful filenames. Ensure store path exists.
-_store_path = os.path.join(sublime.packages_path(), 'User', _friendly_name)
+_store_path = os.path.join(sublime.packages_path(), 'User', _plugin_name)
 pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-_log_fn = os.path.join(_store_path, f'{_friendly_name}.log')
+_log_fn = os.path.join(_store_path, f'{_plugin_name}.log')
 
 
 # Initialize logging. Maybe roll over log now.
@@ -48,21 +50,21 @@ if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
 
 
 #-----------------------------------------------------------------------------------
-def get_friendly_name():
-    ''' How this is known to humans.'''
-    return _friendly_name
+def get_plugin_name():
+    ''' How this is known internally.'''
+    return _plugin_name
 
 
 #-----------------------------------------------------------------------------------
 def get_store_fn():
     ''' Where to keep this module's stuff.'''
-    return os.path.join(_store_path, f'{_friendly_name}.store')
+    return os.path.join(_store_path, f'{_plugin_name}.store')
 
 
 #-----------------------------------------------------------------------------------
 def get_settings_fn():
     ''' Get the settings fn suitable for ST.'''
-    return os.path.join(f'{_friendly_name}.sublime-settings')
+    return os.path.join(f'{_plugin_name}.sublime-settings')
 
 
 #-----------------------------------------------------------------------------------
