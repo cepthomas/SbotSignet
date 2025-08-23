@@ -6,7 +6,7 @@ import sublime_plugin
 from . import sbot_common as sc
 
 
-# TODO Allow signets for new and unsaved files. Not persisted until saved w/filename.
+# TODO Allow signets for temp/scratch files. Not persisted until saved w/filename.
 
 
 # Definitions.
