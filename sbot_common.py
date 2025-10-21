@@ -6,46 +6,27 @@ import datetime
 import pathlib
 import shutil
 import subprocess
+import socket
 import sublime
 import sublime_plugin
 
 
+# This will get replaced with a plugin specific name during the copy process.
+_plugin_name = 'SignetBookmarks'
+
 # Data type for shared scopes.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
 
-# Log levels.
-LL_ERROR = 0
-LL_INFO = 1
-LL_DEBUG = 2
-
+# Track temporary view.
 _temp_view_id = None
 
-# This will get replaced during the copy process.
-_plugin_name = 'SignetBookmarks'
-
-
-#-----------------------------------------------------------------------------------
-#----------------------- Initialization --------------------------------------------
-#-----------------------------------------------------------------------------------
-
-
-# Now make the useful filenames. Ensure store path exists.
+# Plugin data storage dir.
 _store_path = os.path.join(sublime.packages_path(), 'User', _plugin_name)
 pathlib.Path(_store_path).mkdir(parents=True, exist_ok=True)
-_log_fn = os.path.join(_store_path, f'{_plugin_name}.log')
-
-
-# Initialize logging. Maybe roll over log now.
-if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
-    bup = _log_fn.replace('.log', '_old.log')
-    shutil.copyfile(_log_fn, bup)
-    # Clear current log file.
-    with open(_log_fn, 'w'):
-        pass
 
 
 #-----------------------------------------------------------------------------------
-#---------------------------- Public functions -------------------------------------
+#---------------------------- Public uttility functions ----------------------------
 #-----------------------------------------------------------------------------------
 
 
@@ -65,33 +46,6 @@ def get_store_fn():
 def get_settings_fn():
     ''' Get the settings fn suitable for ST.'''
     return os.path.join(f'{_plugin_name}.sublime-settings')
-
-
-#-----------------------------------------------------------------------------------
-def error(message, tb=None):
-    '''Logger function.'''
-    _write_log(LL_ERROR, message, tb)
-
-    # Show the user some context info.
-    info = [message]
-    # if tb is not None:
-    #     frame = traceback.extract_tb(tb)[-1]
-    #     info.append(f'at {frame.name}({frame.lineno})')
-    # info.append('See the log for details')
-    sublime.error_message('\n'.join(info))  # This goes to console too.
-
-
-#-----------------------------------------------------------------------------------
-def info(message):
-    '''Logger function.'''
-    _write_log(LL_INFO, message)
-    sublime.status_message(message)
-
-
-#-----------------------------------------------------------------------------------
-def debug(message):
-    '''Logger function.'''
-    _write_log(LL_DEBUG, message)
 
 
 #-----------------------------------------------------------------------------------
@@ -214,7 +168,7 @@ def get_path_parts(window, paths):
     '''
     Slide and dice into useful parts. paths is a list of which only the first is considered.
     Returns (dir, fn, path) where:
-    - path is fully expanded path or None if invalid.
+    - path is fully expanded path or valid url or None if invalid.
     - fn is None for a directory.
     '''
     dir = None
@@ -237,14 +191,12 @@ def get_path_parts(window, paths):
         if exp_path is not None:
             if os.path.isdir(exp_path):
                 dir = exp_path
-                path = exp_path
             elif os.path.isfile(exp_path):
-                path = exp_path
                 dir, fn = os.path.split(exp_path)
             else:
                 dir = None
                 fn = None
-                path = None
+        path = exp_path
 
     return (dir, fn, path)
 
@@ -281,8 +233,59 @@ def open_terminal(where):
 
 
 #-----------------------------------------------------------------------------------
-#---------------------------- Private functions ------------------------------------
+#---------------------------- Logging functions ------------------------------------
 #-----------------------------------------------------------------------------------
+
+_log_fn = os.path.join(_store_path, f'{_plugin_name}.log')
+
+# TCP configuration.
+HOST = '127.0.0.1'
+PORT = None # default = off  51111
+
+# Optional ansi color (https://en.wikipedia.org/wiki/ANSI_escape_code)
+USE_COLOR = True
+ERROR_COLOR = 91 # br red  31 is reg red
+DEBUG_COLOR = 93 # yellow
+INFO_COLOR = None # 37/97 white
+
+# Delimiter for socket message lines.
+MDEL = '\n'
+
+# NTerm // Parse the args: "127.0.0.1 59120"
+
+#-----------------------------------------------------------------------------------
+# Initialize logging. Maybe roll over log now.
+if os.path.exists(_log_fn) and os.path.getsize(_log_fn) > 50000:
+    bup = _log_fn.replace('.log', '_old.log')
+    shutil.copyfile(_log_fn, bup)
+    # Clear current log file.
+    with open(_log_fn, 'w'):
+        pass
+
+
+#-----------------------------------------------------------------------------------
+def error(message, tb=None):
+    '''Client logger function.'''
+    _write_log('ERR', message, tb)
+
+    # Show the user some context info.
+    info = [message]
+    info.append('See the log for details')
+    sublime.error_message('\n'.join(info))  # This goes to console too.
+
+
+#-----------------------------------------------------------------------------------
+def info(message):
+    '''Client logger function.'''
+    _write_log('INF', message)
+    sublime.status_message(message)
+
+
+#-----------------------------------------------------------------------------------
+def debug(message):
+    '''Client logger function.'''
+    _write_log('DBG', message)
+
 
 #-----------------------------------------------------------------------------------
 def _write_log(level, message, tb=None):
@@ -291,7 +294,7 @@ def _write_log(level, message, tb=None):
     # if _log_fn == INVALID_FN:
     #     raise RuntimeError('Logger has not been initialized.')
 
-    # Gates. Sometimes get stray empty lines.
+    # Sometimes get stray empty lines.
     if len(message) == 0:
         return
     if len(message) == 1 and message[0] == '\n':
@@ -305,17 +308,12 @@ def _write_log(level, message, tb=None):
     # f'mod_name = {frame.f_globals["__name__"]}'
     # f'class_name = {frame.f_locals["self"].__class__.__name__}'
 
-    slvl = '???'
-    if level == LL_ERROR: slvl = 'ERR'
-    elif level == LL_INFO: slvl = 'INF'
-    elif level == LL_DEBUG: slvl = 'DBG'
-
     time_str = f'{str(datetime.datetime.now())}'[0:-3]
 
     # Write the record. No need to be synchronized across multiple sbot plugins
     # as ST docs say that API runs on a single thread.
     with open(_log_fn, 'a') as log:
-        out_line = f'{time_str} {slvl} {fn}:{line} {message}'
+        out_line = f'{time_str} {level} {fn}:{line} {message}'
         log.write(out_line + '\n')
         if tb is not None:
             # The traceback formatter is a bit ugly - clean it up.
@@ -326,3 +324,63 @@ def _write_log(level, message, tb=None):
             stb = '\n'.join(tblines)
             log.write(stb + '\n')
         log.flush()
+
+
+
+# Example: UDP Client using Python - send
+
+# import socket
+# msgFromClient       = "Hello UDP Server"
+# bytesToSend         = str.encode(msgFromClient)
+# serverAddressPort   = ("127.0.0.1", 20001)
+# bufferSize          = 1024
+
+# # Create a UDP socket at client side
+# UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+# # Send to server using created UDP socket
+# UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+# msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+# msg = "Message from Server {}".format(msgFromServer[0])
+# print(msg)
+
+# Output:
+# Message from Server b"Hello UDP Client"
+ 
+#-----------------------------------------------------------------------------------
+def write_remote(msg):
+    # Create a TCP client socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # SOCK_DGRAM
+    # For listening on all available interfaces, use an empty string '' or '0.0.0.0' as the IP address.
+
+
+    try:
+        # Connect to the server
+        client_socket.connect((HOST, PORT))
+        print(f"Connected to server at {HOST}:{PORT}")
+
+        # Color?
+        color = None # default
+        if USE_COLOR:
+            if msg.startswith('ERR'): color = ERROR_COLOR
+            elif msg.startswith('DBG'): color = DEBUG_COLOR
+            elif msg.startswith('INF'): color = INFO_COLOR
+
+        # Send it.
+        msg = f'{msg}{MDEL}' if color is None else f'\033[{color}m{msg}\033[0m{MDEL}'
+        client_socket.sendall(msg.encode('utf-8'))
+
+    except ConnectionRefusedError:
+        # print(f"Error: Connection refused. Is the server running on {HOST}:{PORT}?")
+        pass
+
+    except Exception as e:
+        # print(f"An error occurred: {e}")
+        pass
+
+    finally:
+        # Close the socket
+        client_socket.close()
+        # print("Connection closed.")
