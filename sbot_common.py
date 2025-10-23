@@ -270,7 +270,10 @@ def error(message, tb=None):
 
     # Show the user some context info.
     info = [message]
-    info.append('See the log for details')
+    for s in traceback.format_tb(tb):
+        if len(s) > 0:
+            info.append(s[:-1])
+    # info.append('See the log for details')
     sublime.error_message('\n'.join(info))  # This goes to console too.
 
 
