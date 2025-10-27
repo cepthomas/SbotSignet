@@ -217,19 +217,17 @@ def open_path(path):
 def open_terminal(where):
     '''Open a terminal in where.'''
 
-    # TODO This works for gnome. Maybe should support other desktop types?
+    if sublime.platform() == 'osx':
+        os.system(f'open -a Terminal {where}')
+    elif sublime.platform() == 'windows':
+        subprocess.run(f'wt -d "{where}"', shell=False, check=False)  # W10+
+    else:  # linux -- this works for gnome, other desktop types need a config item.
+        subprocess.run(f'gnome-terminal --working-directory="{where}"', shell=False, check=False)
     # Kde -> konsole
     # xfce4 -> xfce4-terminal
     # Cinnamon -> x-terminal-emulator
     # MATE -> mate-terminal --window
     # Unity -> gnome-terminal --profile=Default
-
-    if sublime.platform() == 'osx':
-        os.system(f'open -a Terminal {where}')
-    elif sublime.platform() == 'windows':
-        subprocess.run(f'wt -d "{where}"', shell=False, check=False)  # W10+
-    else:  # linux
-        subprocess.run(f'gnome-terminal --working-directory="{where}"', shell=False, check=False)
 
 
 #-----------------------------------------------------------------------------------
