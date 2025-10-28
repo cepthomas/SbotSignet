@@ -326,36 +326,11 @@ def _write_log(level, message, tb=None):
             log.write(stb + '\n')
         log.flush()
 
-
-
-# Example: UDP Client using Python - send
-
-# import socket
-# msgFromClient       = "Hello UDP Server"
-# bytesToSend         = str.encode(msgFromClient)
-# serverAddressPort   = ("127.0.0.1", 20001)
-# bufferSize          = 1024
-
-# # Create a UDP socket at client side
-# UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-# # Send to server using created UDP socket
-# UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-# msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-# msg = "Message from Server {}".format(msgFromServer[0])
-# print(msg)
-
-# Output:
-# Message from Server b"Hello UDP Client"
  
 #-----------------------------------------------------------------------------------
 def write_remote(msg):
     # Create a TCP client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # SOCK_DGRAM
-    # For listening on all available interfaces, use an empty string '' or '0.0.0.0' as the IP address.
-
 
     try:
         # Connect to the server
