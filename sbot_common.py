@@ -12,7 +12,7 @@ import sublime_plugin
 
 
 # This will get replaced with a plugin specific name during the copy process.
-_plugin_name = 'SignetBookmarks'
+_plugin_name = 'SBOT_DEV'
 
 # Data type for shared scopes.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
@@ -204,13 +204,16 @@ def get_path_parts(window, paths):
 #-----------------------------------------------------------------------------------
 def open_path(path):
     '''Acts as if you had clicked the path in the UI. Honors your file associations.'''
-    if sublime.platform() == 'osx':
-        subprocess.call(['open', path])
-    elif sublime.platform() == 'windows':
-        os.startfile(path)
-    else:  # linux variants
-        subprocess.run(('xdg-open', path))
-    return True
+    try:
+        if sublime.platform() == 'osx':
+            subprocess.call(['open', path])
+        elif sublime.platform() == 'windows':
+            os.startfile(path)
+        else:  # linux variants
+            subprocess.run(('xdg-open', path))
+        return True
+    except:
+        return False
 
 
 #-----------------------------------------------------------------------------------
