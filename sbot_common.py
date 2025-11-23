@@ -12,7 +12,7 @@ import sublime_plugin
 
 
 # This will get replaced with a plugin specific name during the copy process.
-_plugin_name = 'SBOT_DEV'
+_plugin_name = 'SignetBookmarks'
 
 # Data type for shared scopes.
 HighlightInfo = collections.namedtuple('HighlightInfo', 'scope_name, region_name, type')
