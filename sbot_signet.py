@@ -14,15 +14,8 @@ SIGNET_REGION_NAME = 'signet_region'
 SIGNET_ICON = 'Packages/Theme - Default/common/label.png'
 
 # The current signets. This is global across all ST instances/window/projects.
+# See $APPDATA\Sublime Text\Packages\User\SignetBookmarks\SignetBookmarks.store
 _sigs = {}
-# {
-#     "my.sublime-project": {
-#         "file_with_signets_1.ext": [100, 200, ...],
-#         "file_with_signets_2.ext": [101, 201, ...],
-#         ...
-#     },
-#     ...
-# }
 
 
 

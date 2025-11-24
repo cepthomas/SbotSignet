@@ -237,22 +237,21 @@ def open_terminal(where):
 #---------------------------- Logging functions ------------------------------------
 #-----------------------------------------------------------------------------------
 
+# Local log file.
 _log_fn = os.path.join(_store_path, f'{_plugin_name}.log')
 
+### Remote debugger configuration.
 # TCP configuration.
 HOST = '127.0.0.1'
 PORT = None # default = off  51111
-
 # Optional ansi color (https://en.wikipedia.org/wiki/ANSI_escape_code)
 USE_COLOR = True
 ERROR_COLOR = 91 # br red  31 is reg red
 DEBUG_COLOR = 93 # yellow
 INFO_COLOR = None # 37/97 white
-
 # Delimiter for socket message lines.
 MDEL = '\n'
 
-# NTerm // Parse the args: "127.0.0.1 59120"
 
 #-----------------------------------------------------------------------------------
 # Initialize logging. Maybe roll over log now.
@@ -276,6 +275,13 @@ def error(message, tb=None):
             info.append(s[:-1])
     # info.append('See the log for details')
     sublime.error_message('\n'.join(info))  # This goes to console too.
+
+
+#-----------------------------------------------------------------------------------
+def warn(message):
+    '''Client logger function.'''
+    _write_log('WRN', message)
+    sublime.message_dialog(f'Warning!\n{message}')
 
 
 #-----------------------------------------------------------------------------------
